@@ -1,3 +1,4 @@
+# pylint: disable=missing-docstring
 """ oAuth models module """
 from sqlalchemy import (
     Column,
@@ -106,3 +107,13 @@ class Token(Base):
     @property
     def user(self):
         return None
+
+    @property
+    def interest(self):
+        return {
+            'token_type': self.token_type,
+            'access_token': self.access_token,
+            'refresh_token': self.refresh_token,
+            'expires': self.expires,
+            'scopes': self.scopes,
+        }

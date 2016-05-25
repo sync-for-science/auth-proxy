@@ -47,6 +47,12 @@ class OAuthService(object):
             'default_scopes': client.default_scopes,
         }
 
+    def audit(self, client_id):
+        """ Audit all the tokens available to a client.
+        """
+        return self.db.session.query(Token).\
+            filter_by(client_id=client_id)
+
     def cb_clientgetter(self, client_id):
         """ OAuth2Provider Client getter.
         """

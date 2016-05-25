@@ -8,6 +8,7 @@ from . import Server
 class RequestsServer(Server):
     """ Makes a requests request and returns the response.
     """
+
     def respond(self, request):
         """ @inherit
         """
