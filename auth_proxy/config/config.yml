@@ -1,0 +1,9 @@
+---
+COMMON: &common
+  SECRET_KEY: 'secret'
+  SQLALCHEMY_DATABASE_URI: 'sqlite:///db.sqlite'
+  API_SERVER: 'ordbok_env_config_API_SERVER'
+
+DEVELOPMENT: &development
+  <<: *common
+  DEBUG: True

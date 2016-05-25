@@ -1,11 +1,8 @@
 # pylint: disable=unused-variable, missing-docstring
 """ Views module
 """
-import os
-
 from flask import jsonify, request, url_for, Response
 from injector import inject
-import requests
 
 from auth_proxy import services
 
@@ -45,48 +42,26 @@ def configure_views(app, oauth):
         })
 
     @app.route('/api/fhir/metadata')
-    def api_fhir_metadata():
-        url = os.getenv('API_SERVER') + '/metadata'
-        headers = {
-            'Accept': 'application/json+fhir',
-        }
-        response = requests.get(url, headers=headers)
-        conformance = response.json()
+    @inject(service=services.ProxyService)
+    def api_fhir_metadata(service):
+        url = app.config['API_SERVER'] + '/metadata'
+        authorize = url_for('cb_oauth_authorize', _external=True)
+        token = url_for('cb_oauth_token', _external=True)
+        register = url_for('oauth_register', _external=True),
 
-        security = conformance['rest'][0].get('security', {})
-
-        security['extension'] = [{
-            'url': 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
-            'extension': [{
-                'url': 'authorize',
-                'valueUri': url_for('cb_oauth_authorize', _external=True),
-            }, {
-                'url': 'token',
-                'valueUri': url_for('cb_oauth_token', _external=True),
-            }, {
-                'url': 'register',
-                'valueUri': url_for('oauth_register', _external=True),
-            }]
-        }]
-        conformance['rest'][0]['security'] = security
+        conformance = service.conformance(url=url,
+                                          authorize=authorize,
+                                          token=token,
+                                          register=register)
 
         return jsonify(conformance)
 
-    @app.route('/api/fhir/<path:path>')
+    @app.route('/api/fhir/<path:path>', methods=['GET'])
+    @inject(service=services.ProxyService)
     @oauth.require_oauth()
-    def api_fhir_proxy(path):
-        url = os.getenv('API_SERVER') + '/' + path
+    def api_fhir_proxy(service, path):
+        url = app.config['API_SERVER'] + '/' + path
 
-        headers = {key: val for (key, val) in request.headers.items()
-                   if key in ['Accept']}
+        response = service.api(url, request)
 
-        response = requests.get(url,
-                                headers=headers,
-                                params=request.args)
-
-        headers = {key: val for (key, val) in response.headers.items()
-                   if key in ['Content-Type']}
-
-        return Response(response=response.text,
-                        headers=headers,
-                        status=response.status_code)
+        return Response(**response)

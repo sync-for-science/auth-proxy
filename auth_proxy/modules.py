@@ -5,7 +5,7 @@ from flask_oauthlib.provider import OAuth2Provider
 from flask_sqlalchemy import SQLAlchemy
 from injector import Module, singleton
 
-from auth_proxy.services import OAuthService
+from auth_proxy.services import OAuthService, ProxyService
 
 
 class AppModule(Module):
@@ -35,3 +35,4 @@ class AppModule(Module):
 class ApplicationModule(Module):
     def configure(self, binder):
         binder.bind(OAuthService, scope=singleton)
+        binder.bind(ProxyService)

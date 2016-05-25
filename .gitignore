@@ -1,4 +1,4 @@
 ENV
 *.sqlite
 *.pyc
-.ropeproject/
+runserver.sh
