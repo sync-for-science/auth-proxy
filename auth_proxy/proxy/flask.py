@@ -9,7 +9,14 @@ class FlaskClient(Client):
     """ Converts a Flask request object into a generic one.
     """
     allowed_headers = ['Accept']
-    allowed_args = ['_count', '_format', '_lastUpdated', 'category', 'patient']
+    allowed_args = [
+        '_count',
+        '_format',
+        '_lastUpdated',
+        'category',
+        'patient',
+        '_security',
+    ]
     allowed_methods = ['GET']
     allowed_resources = [
         'AllergyIntolerance',
@@ -26,6 +33,17 @@ class FlaskClient(Client):
         'Practitioner',
         'Procedure',
     ]
+    ccds_scopes = [
+        'patient',
+        'medications',
+        'allergies',
+        'immunizations',
+        'problems',
+        'procedures',
+        'vital-signs',
+        'laboratory',
+        'smoking',
+    ]
 
     def __init__(self, url, orig):
         self.url = url
@@ -34,7 +52,27 @@ class FlaskClient(Client):
     def request(self):
         """ @inherit
         """
-        url = self.url + '?' + parse.urlencode(self.orig.args)
+        args = dict(self.orig.args)
+
+        # Get the authorized scopes from the request, or open everything if
+        # this is an un-authorized request
+        try:
+            scopes = list(self.orig.oauth.scopes)
+        except AttributeError:
+            scopes = ['patient/*.read',]
+
+        # Wildcard scopes should be expanded
+        try:
+            wildcard = scopes.index('patient/*.read')
+            scopes[wildcard:wildcard] = self.ccds_scopes
+        except ValueError:
+            pass
+
+        # Update the query params
+        args['_security'] = ' '.join(scopes + ['public'] + args.get('_security', ''))
+
+        # Determine the URL to proxy to
+        url = self.url + '?' + parse.urlencode(args)
 
         # Strip out headers that might confuse things
         headers = {key: val for (key, val) in self.orig.headers.items()
