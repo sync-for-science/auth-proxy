@@ -54,22 +54,15 @@ class FlaskClient(Client):
         """
         args = dict(self.orig.args)
 
-        # Get the authorized scopes from the request, or open everything if
-        # this is an un-authorized request
-        try:
-            scopes = list(self.orig.oauth.scopes)
-        except AttributeError:
-            scopes = ['patient/*.read',]
+        # We don't care what the client thinks it should be able to see
+        args.pop('_security', None)
 
-        # Wildcard scopes should be expanded
-        try:
-            wildcard = scopes.index('patient/*.read')
-            scopes[wildcard:wildcard] = self.ccds_scopes
-        except ValueError:
-            pass
+        # There can be duplicate param keys
+        args = list(args.items())
 
         # Update the query params
-        args['_security'] = ' '.join(scopes + ['public'] + args.get('_security', ''))
+        args.append(('_security', self._scope_security()))
+        args.append(('_security', self._patient_security()))
 
         # Determine the URL to proxy to
         url = self.url + '?' + parse.urlencode(args)
@@ -98,3 +91,30 @@ class FlaskClient(Client):
         path = self.orig.view_args.get('path').split('/')[0]
         if path not in self.allowed_resources:
             raise ForbiddenError(segment=path)
+
+    def _scope_security(self):
+        """ Determine which categories the client should be allowed to see
+        based on their approved scopes.
+        """
+        # Get the authorized scopes from the request, or open everything if
+        # this is an un-authorized request
+        try:
+            scopes = list(self.orig.oauth.scopes)
+        except AttributeError:
+            scopes = ['patient/*.read',]
+
+        # Wildcard scopes should be expanded
+        try:
+            wildcard = scopes.index('patient/*.read')
+            scopes[wildcard:wildcard] = self.ccds_scopes
+        except ValueError:
+            pass
+
+        return ','.join(['public'] + scopes)
+
+    def _patient_security(self):
+        """ Determine which Patients the client should be allowed to see.
+
+        TODO: Actually do something here
+        """
+        return ','.join(['public'])
