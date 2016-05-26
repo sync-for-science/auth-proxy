@@ -13,7 +13,8 @@ colorama==0.3.7
 injector==0.9.1
 itsdangerous==0.24
 lazy-object-proxy==1.2.2
-oauthlib==1.1.1
+#oauthlib==1.1.1
+git+git://github.com/idan/oauthlib.git@a3ef5510d4d0e7bed627a5fdc2a078ed1021a446
 ordbok==0.1.8
 pep8==1.7.0
 pycrypto==2.6.1

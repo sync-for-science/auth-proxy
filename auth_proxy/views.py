@@ -5,6 +5,7 @@ from flask import jsonify, request, url_for, Response
 from injector import inject
 
 from auth_proxy import services
+from auth_proxy import proxy
 
 
 def configure_views(app, oauth):
@@ -35,10 +36,15 @@ def configure_views(app, oauth):
         return True
 
     @app.route('/api/me')
+    @inject(service=services.OAuthService)
     @oauth.require_oauth()
-    def api_me():
+    def api_me(service):
+        client_id = request.oauth.client.client_id
+        tokens = service.audit(client_id)
+
         return jsonify({
-            'client_id': request.oauth.client.client_id,
+            'client_id': client_id,
+            'tokens': [token.interest for token in tokens],
         })
 
     @app.route('/api/fhir/metadata')
@@ -56,12 +62,26 @@ def configure_views(app, oauth):
 
         return jsonify(conformance)
 
-    @app.route('/api/fhir/<path:path>', methods=['GET'])
+    @app.route('/api/fhir/<path:path>', methods=['GET', 'POST'])
     @inject(service=services.ProxyService)
     @oauth.require_oauth()
     def api_fhir_proxy(service, path):
         url = app.config['API_SERVER'] + '/' + path
-
         response = service.api(url, request)
 
         return Response(**response)
+
+    @app.route('/api/open-fhir/<path:path>', methods=['GET', 'POST'])
+    @inject(service=services.ProxyService)
+    def api_open_fhir_proxy(service, path):
+        url = app.config['API_SERVER'] + '/' + path
+        response = service.api(url, request)
+
+        return Response(**response)
+
+    @app.errorhandler(proxy.ForbiddenError)
+    def handle_forbidden_error(error):
+        response = jsonify({'error': error.message})
+        response.status_code = 401
+
+        return response
