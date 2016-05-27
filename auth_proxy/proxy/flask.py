@@ -19,6 +19,7 @@ class FlaskClient(Client):
     ]
     allowed_methods = ['GET']
     allowed_resources = [
+        'metadata',
         'AllergyIntolerance',
         'Condition',
         'DocumentReference',
