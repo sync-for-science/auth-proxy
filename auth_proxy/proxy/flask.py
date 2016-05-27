@@ -52,17 +52,16 @@ class FlaskClient(Client):
     def request(self):
         """ @inherit
         """
-        args = dict(self.orig.args)
+        args = list(self.orig.args.items())
 
         # We don't care what the client thinks it should be able to see
-        args.pop('_security', None)
-
-        # There can be duplicate param keys
-        args = list(args.items())
+        args = [arg for arg in args if arg[0] != '_security']
 
         # Update the query params
-        args.append(('_security', self._scope_security()))
-        args.append(('_security', self._patient_security()))
+        path = self.orig.view_args.get('path').split('/')
+        if len(path) == 1:
+            args.append(('_security', self._scope_security()))
+            # args.append(('_security', self._patient_security()))
 
         # Determine the URL to proxy to
         url = self.url + '?' + parse.urlencode(args)
@@ -101,7 +100,7 @@ class FlaskClient(Client):
         try:
             scopes = list(self.orig.oauth.scopes)
         except AttributeError:
-            scopes = ['patient/*.read',]
+            scopes = ['patient/*.read']
 
         # Wildcard scopes should be expanded
         try:
