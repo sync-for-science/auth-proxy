@@ -26,6 +26,7 @@ class AppModule(Module):
         def cb_create_database(*args, **kwargs):  # pylint: disable=unused-variable
             from auth_proxy.models import Base, oauth, user
             Base.metadata.create_all(db.engine)
+            db.session.add(user.User(id=1, patient_id='smart-1288992'))
             db.session.commit()
 
     def configure_db(self):

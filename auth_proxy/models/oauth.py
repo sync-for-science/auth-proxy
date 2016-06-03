@@ -21,9 +21,6 @@ class Client(Base):
     client_id = Column(String, primary_key=True)
     client_secret = Column(String, nullable=False)
 
-    user_id = Column(Integer, ForeignKey('user.id'))
-    user = orm.relationship('User')
-
     _redirect_uris = Column('redirect_uris', Text)
     _default_scopes = Column('default_scopes', Text)
 
@@ -79,10 +76,6 @@ class Grant(Base):
             return self._scopes.split()
         return []
 
-    @property
-    def user(self):
-        return None
-
 
 class Token(Base):
     """ A bearer token is the final token that could be used by the client.
@@ -112,10 +105,6 @@ class Token(Base):
         if self._scopes:
             return self._scopes.split()
         return []
-
-    @property
-    def user(self):
-        return None
 
     @property
     def interest(self):

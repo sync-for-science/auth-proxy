@@ -35,7 +35,6 @@ class OAuthService(object):
         client = Client(
             client_id=client_id,
             client_secret=str(uuid.uuid4()),
-            user=User(patient_id='smart-1288992'),
             _redirect_uris=redirect_uris,
             _default_scopes=scopes,
         )
@@ -55,17 +54,23 @@ class OAuthService(object):
         return self.db.session.query(Token).\
             filter_by(client_id=client_id)
 
-    def smart_token_credentials(self, client_id):
+    def smart_token_credentials(self, grant_type, code=None, refresh_token=None):
         """ Provide additional credentials required by a SMART token request.
         """
-        client = self.db.session.query(Client).\
-            filter_by(client_id=client_id).first()
+        if grant_type == 'authorization_code':
+            grant = self.db.session.query(Grant).\
+                filter_by(code=code).first()
+            user = grant.user
+        elif grant_type == 'refresh_token':
+            token = self.db.session.query(Token).\
+                filter_by(refresh_token=refresh_token).first()
+            user = token.user
 
-        if client is None:
+        if user is None:
             return None
 
         return {
-            'patient': client.user.patient_id,
+            'patient': user.patient_id,
         }
 
     def cb_clientgetter(self, client_id):
@@ -84,13 +89,20 @@ class OAuthService(object):
         """ OAuth2Provider Grant setter.
         """
         expires = datetime.utcnow() + timedelta(seconds=100)
+        user = self.db.session.query(User).\
+            filter_by(id=1).first()
+
+        assert user is not None
+
         grant = Grant(
             client_id=client_id,
+            user=user,
             code=code['code'],
             redirect_uri=request.redirect_uri,
             _scopes=' '.join(request.scopes),
             expires=expires
         )
+
         self.db.session.add(grant)
         self.db.session.commit()
 
@@ -119,6 +131,8 @@ class OAuthService(object):
         expires_in = token.get('expires_in')
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
 
+        assert request.user is not None
+
         new = Token(
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
@@ -126,6 +140,7 @@ class OAuthService(object):
             _scopes=token['scope'],
             expires=expires,
             client_id=request.client.client_id,
+            user=request.user,
         )
         self.db.session.add(new)
         self.db.session.commit()
