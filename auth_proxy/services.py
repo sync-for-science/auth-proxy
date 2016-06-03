@@ -9,6 +9,7 @@ from injector import inject
 import requests
 
 from auth_proxy.models.oauth import Client, Grant, Token
+from auth_proxy.models.user import User
 from auth_proxy.proxy import Proxy
 from auth_proxy.proxy.flask import FlaskClient
 from auth_proxy.proxy.requests import RequestsServer
@@ -34,6 +35,7 @@ class OAuthService(object):
         client = Client(
             client_id=client_id,
             client_secret=str(uuid.uuid4()),
+            user=User(patient_id='smart-1288992'),
             _redirect_uris=redirect_uris,
             _default_scopes=scopes,
         )
@@ -52,6 +54,19 @@ class OAuthService(object):
         """
         return self.db.session.query(Token).\
             filter_by(client_id=client_id)
+
+    def smart_token_credentials(self, client_id):
+        """ Provide additional credentials required by a SMART token request.
+        """
+        client = self.db.session.query(Client).\
+            filter_by(client_id=client_id).first()
+
+        if client is None:
+            return None
+
+        return {
+            'patient': client.user.patient_id,
+        }
 
     def cb_clientgetter(self, client_id):
         """ OAuth2Provider Client getter.

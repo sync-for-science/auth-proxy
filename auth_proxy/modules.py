@@ -24,7 +24,7 @@ class AppModule(Module):
 
         @self.app.before_first_request
         def cb_create_database(*args, **kwargs):  # pylint: disable=unused-variable
-            from auth_proxy.models import Base, oauth
+            from auth_proxy.models import Base, oauth, user
             Base.metadata.create_all(db.engine)
             db.session.commit()
 
