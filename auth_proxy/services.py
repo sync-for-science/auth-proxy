@@ -9,6 +9,7 @@ from injector import inject
 import requests
 
 from auth_proxy.models.oauth import Client, Grant, Token
+from auth_proxy.models.user import User
 from auth_proxy.proxy import Proxy
 from auth_proxy.proxy.flask import FlaskClient
 from auth_proxy.proxy.requests import RequestsServer
@@ -53,6 +54,25 @@ class OAuthService(object):
         return self.db.session.query(Token).\
             filter_by(client_id=client_id)
 
+    def smart_token_credentials(self, grant_type, code=None, refresh_token=None):
+        """ Provide additional credentials required by a SMART token request.
+        """
+        if grant_type == 'authorization_code':
+            grant = self.db.session.query(Grant).\
+                filter_by(code=code).first()
+            user = grant.user
+        elif grant_type == 'refresh_token':
+            token = self.db.session.query(Token).\
+                filter_by(refresh_token=refresh_token).first()
+            user = token.user
+
+        if user is None:
+            return None
+
+        return {
+            'patient': user.patient_id,
+        }
+
     def cb_clientgetter(self, client_id):
         """ OAuth2Provider Client getter.
         """
@@ -69,13 +89,20 @@ class OAuthService(object):
         """ OAuth2Provider Grant setter.
         """
         expires = datetime.utcnow() + timedelta(seconds=100)
+        user = self.db.session.query(User).\
+            filter_by(id=1).first()
+
+        assert user is not None
+
         grant = Grant(
             client_id=client_id,
+            user=user,
             code=code['code'],
             redirect_uri=request.redirect_uri,
             _scopes=' '.join(request.scopes),
             expires=expires
         )
+
         self.db.session.add(grant)
         self.db.session.commit()
 
@@ -93,6 +120,10 @@ class OAuthService(object):
 
     def cb_tokensetter(self, token, request, *args, **kwargs):
         """ OAuth2Provider Token setter.
+
+        Parameters:
+            token : dict
+            request : oauthlib.Request
         """
         tokens = self.db.session.query(Token).\
             filter_by(client_id=request.client.client_id)
@@ -104,6 +135,8 @@ class OAuthService(object):
         expires_in = token.get('expires_in')
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
 
+        assert request.user is not None
+
         new = Token(
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
@@ -111,6 +144,7 @@ class OAuthService(object):
             _scopes=token['scope'],
             expires=expires,
             client_id=request.client.client_id,
+            user=request.user,
         )
         self.db.session.add(new)
         self.db.session.commit()

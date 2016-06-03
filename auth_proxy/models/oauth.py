@@ -21,8 +21,8 @@ class Client(Base):
     client_id = Column(String, primary_key=True)
     client_secret = Column(String, nullable=False)
 
-    _redirect_uris = Column(Text)
-    _default_scopes = Column(Text)
+    _redirect_uris = Column('redirect_uris', Text)
+    _default_scopes = Column('default_scopes', Text)
 
     @property
     def client_type(self):
@@ -53,6 +53,9 @@ class Grant(Base):
 
     id = Column(Integer, primary_key=True)
 
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
+    user = orm.relationship('User')
+
     client_id = Column(String, ForeignKey('client.client_id'),
                        nullable=False)
     client = orm.relationship('Client')
@@ -62,7 +65,7 @@ class Grant(Base):
     redirect_uri = Column(String)
     expires = Column(DateTime)
 
-    _scopes = Column(Text)
+    _scopes = Column('scopes', Text)
 
     def delete(self):
         self.expires = 0
@@ -72,10 +75,6 @@ class Grant(Base):
         if self._scopes:
             return self._scopes.split()
         return []
-
-    @property
-    def user(self):
-        return None
 
 
 class Token(Base):
@@ -90,23 +89,22 @@ class Token(Base):
                        nullable=False)
     client = orm.relationship('Client')
 
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = orm.relationship('User')
+
     # currently only bearer is supported
     token_type = Column(String)
 
     access_token = Column(String, unique=True)
     refresh_token = Column(String, unique=True)
     expires = Column(DateTime)
-    _scopes = Column(Text)
+    _scopes = Column('scopes', Text)
 
     @property
     def scopes(self):
         if self._scopes:
             return self._scopes.split()
         return []
-
-    @property
-    def user(self):
-        return None
 
     @property
     def interest(self):

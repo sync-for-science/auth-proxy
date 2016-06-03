@@ -15,4 +15,4 @@ class User(Base):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
+    patient_id = Column(String)

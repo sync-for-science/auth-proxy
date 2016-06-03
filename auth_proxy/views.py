@@ -27,8 +27,15 @@ def configure_views(app, oauth):
 
     @app.route('/oauth/token', methods=['GET', 'POST'])
     @oauth.token_handler
-    def cb_oauth_token(*args, **kwargs):
-        return None
+    @inject(service=services.OAuthService)
+    def cb_oauth_token(service, *args, **kwargs):
+        credentials = service.smart_token_credentials(
+            grant_type=request.form.get('grant_type'),
+            code=request.form.get('code'),
+            refresh_token=request.form.get('refresh_token'),
+        )
+
+        return credentials
 
     @app.route('/oauth/authorize', methods=['GET', 'POST'])
     @oauth.authorize_handler
