@@ -120,6 +120,10 @@ class OAuthService(object):
 
     def cb_tokensetter(self, token, request, *args, **kwargs):
         """ OAuth2Provider Token setter.
+
+        Parameters:
+            token : dict
+            request : oauthlib.Request
         """
         tokens = self.db.session.query(Token).\
             filter_by(client_id=request.client.client_id)
