@@ -2,6 +2,7 @@
 """ Views module
 """
 from flask_sqlalchemy import SQLAlchemy
+import yaml
 
 
 def configure_views(app, injector):
@@ -18,5 +19,9 @@ def configure_views(app, injector):
         db = injector.get(SQLAlchemy)
 
         Base.metadata.create_all(db.engine)
-        db.session.add(user.User(id=1, patient_id='smart-1288992'))
+        with open('auth_proxy/fixtures.yml') as handle:
+            records = yaml.load_all(handle.read())
+            for record in records:
+                resource = record['class'](**record['args'])
+                db.session.add(resource)
         db.session.commit()
