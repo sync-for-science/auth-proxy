@@ -15,6 +15,7 @@ def configure_views(app, oauth):
     def oauth_register(service):
         client = service.register(
             client_id=request.form['client_id'],
+            client_secret=request.form.get('client_secret'),
             redirect_uris=request.form['redirect_uris'],
             scopes=request.form['scopes'],
         )

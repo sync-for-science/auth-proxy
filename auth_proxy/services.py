@@ -29,12 +29,15 @@ class OAuthService(object):
         oauth.tokengetter(self.cb_tokengetter)
         oauth.tokensetter(self.cb_tokensetter)
 
-    def register(self, client_id, redirect_uris, scopes):
+    def register(self, client_id, redirect_uris, scopes, client_secret=None):
         """ Register new clients.
         """
+        if client_secret is None:
+            client_secret = str(uuid.uuid4())
+
         client = Client(
             client_id=client_id,
-            client_secret=str(uuid.uuid4()),
+            client_secret=client_secret,
             _redirect_uris=redirect_uris,
             _default_scopes=scopes,
         )
