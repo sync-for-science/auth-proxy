@@ -2,8 +2,8 @@
 from auth_proxy import main
 
 
-if __name__ == '__main__':
-    app = main()
+app = main()
 
-    ordbok = app.extensions['ordbok']
+if __name__ == '__main__':
+    ordbok = app.extensions['ordbok']  # pylint: disable=invalid-name
     ordbok.app_run(app, host='0.0.0.0')
