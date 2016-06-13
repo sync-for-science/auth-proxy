@@ -1,20 +1,20 @@
 ## The following requirements were added by pip --freeze:
-Flask==0.10.1
-Flask-Injector==0.7.0
+Flask==0.11.1
+Flask-Injector==0.7.1
 Flask-OAuthlib==0.9.2
-Flask-SQLAlchemy==1.0
+Flask-SQLAlchemy==2.1
 Jinja2==2.8
 MarkupSafe==0.23
 PyYAML==3.11
 SQLAlchemy==1.0.13
-Werkzeug==0.9.4
+Werkzeug==0.11.10
 astroid==1.4.5
+click==6.6
 colorama==0.3.7
 injector==0.9.1
 itsdangerous==0.24
 lazy-object-proxy==1.2.2
-#oauthlib==1.1.1
-git+git://github.com/idan/oauthlib.git@a3ef5510d4d0e7bed627a5fdc2a078ed1021a446
+oauthlib==1.1.2
 ordbok==0.1.8
 pep8==1.7.0
 py==1.4.31

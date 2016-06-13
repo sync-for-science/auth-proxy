@@ -9,7 +9,7 @@ from ordbok.flask_helper import FlaskOrdbok
 
 from auth_proxy.modules import AppModule, ApplicationModule
 from auth_proxy.services import OAuthService
-from auth_proxy.views import configure_views
+from auth_proxy import views, cli
 
 
 def main():
@@ -22,7 +22,8 @@ def main():
 
     injector = Injector([AppModule(app), ApplicationModule()])
     injector.get(OAuthService)  # Hacky, but we need to init the singleton
-    configure_views(app=app, oauth=injector.get(OAuth2Provider))
+    views.configure_views(app=app, oauth=injector.get(OAuth2Provider))
+    cli.configure_views(app=app, injector=injector)
 
     FlaskInjector(app=app, injector=injector)
 
