@@ -1,0 +1,4 @@
+---
+class: !!python/name:auth_proxy.models.user.User
+args:
+  patient_id: smart-1288992
