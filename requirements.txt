@@ -17,10 +17,13 @@ lazy-object-proxy==1.2.2
 git+git://github.com/idan/oauthlib.git@a3ef5510d4d0e7bed627a5fdc2a078ed1021a446
 ordbok==0.1.8
 pep8==1.7.0
+py==1.4.31
 pycrypto==2.6.1
 pylint==1.5.5
+pytest==2.9.2
 requests==2.10.0
 requests-oauthlib==0.6.1
 simple-crypt==4.1.7
 six==1.10.0
+uWSGI==2.0.13.1
 wrapt==1.10.8
