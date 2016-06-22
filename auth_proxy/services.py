@@ -63,11 +63,13 @@ class OAuthService(object):
         if grant_type == 'authorization_code':
             grant = self.db.session.query(Grant).\
                 filter_by(code=code).first()
-            user = grant.user
+            user = getattr(grant, 'user', None)
         elif grant_type == 'refresh_token':
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
-            user = token.user
+            user = getattr(token, 'user', None)
+        else:
+            user = None
 
         if user is None:
             return None
