@@ -1,19 +1,17 @@
-## The following requirements were added by pip --freeze:
+## The following requirements were added by pip freeze:
+astroid==1.4.5
+click==6.6
+colorama==0.3.7
 Flask==0.11.1
 Flask-Injector==0.7.1
 Flask-OAuthlib==0.9.3
 Flask-SQLAlchemy==2.1
-Jinja2==2.8
-MarkupSafe==0.23
-PyYAML==3.11
-SQLAlchemy==1.0.13
-Werkzeug==0.11.10
-astroid==1.4.5
-click==6.6
-colorama==0.3.7
+Flask-WTF==0.12
 injector==0.9.1
 itsdangerous==0.24
+Jinja2==2.8
 lazy-object-proxy==1.2.2
+MarkupSafe==0.23
 oauthlib==1.1.2
 ordbok==0.1.8
 pep8==1.7.0
@@ -21,9 +19,13 @@ py==1.4.31
 pycrypto==2.6.1
 pylint==1.5.5
 pytest==2.9.2
+PyYAML==3.11
 requests==2.10.0
 requests-oauthlib==0.6.1
 simple-crypt==4.1.7
 six==1.10.0
+SQLAlchemy==1.0.13
 uWSGI==2.0.13.1
+Werkzeug==0.11.10
 wrapt==1.10.8
+WTForms==2.1

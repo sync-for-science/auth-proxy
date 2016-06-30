@@ -4,6 +4,7 @@
 from flask import Flask
 from flask_injector import FlaskInjector
 from flask_oauthlib.provider import OAuth2Provider
+from flask_wtf.csrf import CsrfProtect
 from injector import Injector
 from ordbok.flask_helper import FlaskOrdbok
 
@@ -20,9 +21,13 @@ def main():
     ordbok.load()
     app.config.update(ordbok)
 
+    # Register CsrfProtect
+    csrf = CsrfProtect()
+    csrf.init_app(app)
+
     injector = Injector([AppModule(app), ApplicationModule()])
     injector.get(OAuthService)  # Hacky, but we need to init the singleton
-    views.configure_views(app=app, oauth=injector.get(OAuth2Provider))
+    views.configure_views(app=app, oauth=injector.get(OAuth2Provider), csrf=csrf)
     cli.configure_views(app=app, injector=injector)
 
     FlaskInjector(app=app, injector=injector)

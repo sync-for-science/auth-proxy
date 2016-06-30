@@ -57,6 +57,14 @@ class OAuthService(object):
         return self.db.session.query(Token).\
             filter_by(client_id=client_id)
 
+    def show_authorize_prompt(self, client_id):
+        """ Provide everything necessary to show the authorize prompt.
+        """
+        client = self.db.session.query(Client).\
+            filter_by(client_id=client_id).first()
+
+        return client
+
     def smart_token_credentials(self, grant_type, code=None, refresh_token=None):
         """ Provide additional credentials required by a SMART token request.
         """

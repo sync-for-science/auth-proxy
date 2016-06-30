@@ -1,14 +1,20 @@
 # pylint: disable=unused-variable, missing-docstring
 """ Views module
 """
-from flask import jsonify, request, url_for, Response
+from flask import (
+    jsonify,
+    request,
+    render_template,
+    url_for,
+    Response,
+)
 from injector import inject
 
 from auth_proxy import services
 from auth_proxy import proxy
 
 
-def configure_views(app, oauth):
+def configure_views(app, oauth, csrf):
 
     @app.route('/oauth/register', methods=['POST'])
     @inject(service=services.OAuthService)
@@ -40,7 +46,21 @@ def configure_views(app, oauth):
 
     @app.route('/oauth/authorize', methods=['GET', 'POST'])
     @oauth.authorize_handler
-    def cb_oauth_authorize(*args, **kwargs):
+    @inject(service=services.OAuthService)
+    def cb_oauth_authorize(service, *args, **kwargs):
+        if request.method == 'GET':
+            # Additional SMART checks not required by OAuth spec
+            assert 'redirect_uri' in request.args, 'Missing redirect_uri.'
+            assert 'scope' in request.args, 'Missing scope.'
+            assert 'state' in request.args, 'Missing state.'
+
+            client = service.show_authorize_prompt(kwargs['client_id'])
+            return render_template('authorize.jinja2',
+                                   client=client,
+                                   data=kwargs)
+
+        csrf.protect()
+
         return True
 
     @app.route('/api/me')
