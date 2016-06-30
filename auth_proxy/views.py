@@ -49,6 +49,11 @@ def configure_views(app, oauth, csrf):
     @inject(service=services.OAuthService)
     def cb_oauth_authorize(service, *args, **kwargs):
         if request.method == 'GET':
+            # Additional SMART checks not required by OAuth spec
+            assert 'redirect_uri' in request.args, 'Missing redirect_uri.'
+            assert 'scope' in request.args, 'Missing scope.'
+            assert 'state' in request.args, 'Missing state.'
+
             client = service.show_authorize_prompt(kwargs['client_id'])
             return render_template('authorize.jinja2',
                                    client=client,
