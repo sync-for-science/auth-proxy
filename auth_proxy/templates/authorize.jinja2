@@ -1,0 +1,122 @@
+{% extends "base.jinja2" %}
+
+{% macro carousel_caption(current) %}
+<div class="carousel-caption">
+    {% set prev = current - 1 %}
+    {% set next = current + 1 %}
+    <div class="pull-left">
+        <a href="/oauth/error" class="btn btn-default">Cancel</a>
+    </div>
+    <div class="pull-right">
+        {% if current > 0 %}
+        <a data-target="#consent-carousel" data-slide-to="{{ prev }}" class="btn btn-primary">Back</a>
+        {% endif %}
+        <a data-target="#consent-carousel" data-slide-to="{{ next }}" class="btn btn-primary">Next</a>
+    </div>
+</div>
+{% endmacro %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div id="consent-carousel" class="carousel slide" data-ride="carouself">
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner" role="listbox">
+                <div class="item active">
+                    <p class="text-center lead">Confirm that the medical information you want shared is from</p>
+                    <h1 class="text-center">Healthcare Provider</h1>
+
+                    {{ carousel_caption(0) }}
+                </div>
+
+                <div class="item">
+                    <p class="text-center lead">Confirm that the medical information you want shared is for</p>
+                    <h1 class="text-center">David Jones (yourself), 57, male</h1>
+
+                    {{ carousel_caption(1) }}
+                </div>
+
+                <div class="item">
+                    <p class="text-center lead">Confirm that the medical information you want shared is for the app</p>
+                    <h1 class="text-center">{{ client.client_id }}</h1>
+
+                    {{ carousel_caption(2) }}
+                </div>
+
+                <div class="item">
+                    <p class="text-center lead">Confirm that the medical information you want shared is for all your</p>
+                    <h1 class="text-center">
+                        {% for scope in data.scopes %}
+                            {{ scope }}<br>
+                        {% endfor %}
+                    </h1>
+
+                    {{ carousel_caption(3) }}
+                </div>
+
+                <div class="item">
+                    <p class="text-center lead">Confirm that the medical information you want shared is for your past as well as future until</p>
+                    <h1 class="text-center">January 31, 2018</h1>
+
+                    {{ carousel_caption(4) }}
+                </div>
+
+                <div class="item">
+                    <h1 class="text-center">Review</h1>
+                    <p class="text-center lead">The following medical information will be shared upon your authorization</p>
+                    <dl class="dl-horizontal">
+                        <dt>from</dt>
+                        <dd>Healthcare Provider Organization</dd>
+                        <dt>to</dt>
+                        <dd>{{ client.client_id }}</dd>
+                        <dt>for</dt>
+                        <dd>Electronic Medical Record information</dd>
+                        <dt>Including</dt>
+                        <dd>{% for scope in data.scopes %}
+                            + {{ scope }}<br>
+                        {% endfor %}</dd>
+                        <dt>until</dt>
+                        <dd>January 31, 2018 (including all past data)</dd>
+                    </dl>
+
+                    <div class="carousel-caption">
+                        <div class="pull-left">
+                            <a href="/oauth/error" class="btn btn-default">Cancel</a>
+                        </div>
+                        <form action="/oauth/authorize" method="post" class="pull-right">
+                            <a data-target="#consent-carousel" data-slide-to="4" class="btn btn-primary">Back</a>
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                            <input type="hidden" name="client_id" value="{{ data.client_id | e }}" />
+                            <input type="hidden" name="scope" value="{{ data.scopes | join(' ') | e }}" />
+                            <input type="hidden" name="response_type" value="{{ data.response_type | e }}" />
+                            <input type="hidden" name="redirect_uri" value="{{ data.redirect_uri | e }}" />
+                            {% if data.state %}
+                            <input type="hidden" name="state" value="{{ data.state | e}}" />
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary" id="authorize">Authorize</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block css %}
+{{ super() }}
+<style type="text/css">
+    #consent-carousel .item {
+        height: 450px;
+        padding: 20px 0 0;
+    }
+    #consent-carousel .item :first-child {
+        margin-top: 0;
+    }
+    #consent-carousel form {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
