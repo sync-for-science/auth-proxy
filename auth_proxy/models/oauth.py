@@ -26,7 +26,7 @@ class Client(Base):
 
     @property
     def client_type(self):
-        return 'public'
+        return 'confidential'
 
     @property
     def redirect_uris(self):
