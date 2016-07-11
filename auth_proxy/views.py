@@ -81,7 +81,7 @@ def configure_views(app, oauth, csrf):
         url = app.config['API_SERVER'] + '/metadata'
         authorize = url_for('cb_oauth_authorize', _external=True)
         token = url_for('cb_oauth_token', _external=True)
-        register = url_for('oauth_register', _external=True),
+        register = url_for('oauth_register', _external=True)
 
         conformance = service.conformance(url=url,
                                           authorize=authorize,
