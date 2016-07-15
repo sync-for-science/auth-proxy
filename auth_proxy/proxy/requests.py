@@ -4,6 +4,8 @@ import requests
 
 from . import Server
 
+ALLOWED_HEADERS = ['Content-Type', 'Access-Control-Allow-Origin']
+
 
 class RequestsServer(Server):
     """ Makes a requests request and returns the response.
@@ -18,7 +20,7 @@ class RequestsServer(Server):
                                     data=request.get('body'))
 
         headers = {key: val for (key, val) in response.headers.items()
-                   if key in ['Content-Type']}
+                   if key in ALLOWED_HEADERS}
 
         return {
             'response': response.text,

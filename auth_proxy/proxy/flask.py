@@ -8,7 +8,7 @@ from . import Client, ForbiddenError
 class FlaskClient(Client):
     """ Converts a Flask request object into a generic one.
     """
-    allowed_headers = ['Accept']
+    allowed_headers = ['Accept', 'Origin']
     allowed_args = [
         '_count',
         '_format',
