@@ -23,7 +23,7 @@ class RequestsServer(Server):
                    if key in ALLOWED_HEADERS}
 
         return {
-            'response': response.text,
+            'response': response.content,
             'status': response.status_code,
             'headers': headers,
         }
