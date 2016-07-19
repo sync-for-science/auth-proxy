@@ -5,7 +5,7 @@
     {% set prev = current - 1 %}
     {% set next = current + 1 %}
     <div class="pull-left">
-        <a href="/oauth/error" class="btn btn-default">Cancel</a>
+        <a href="{{ request.referrer | e }}" class="btn btn-default">Cancel</a>
     </div>
     <div class="pull-right">
         {% if current > 0 %}
@@ -19,7 +19,7 @@
 {% block body %}
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
-        <div id="consent-carousel" class="carousel slide" data-ride="carouself">
+        <div id="consent-carousel" class="carousel" data-ride="carouself">
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
@@ -81,7 +81,7 @@
 
                     <div class="carousel-caption">
                         <div class="pull-left">
-                            <a href="/oauth/error" class="btn btn-default">Cancel</a>
+                            <a href="{{ request.referrer | e }}" class="btn btn-default">Cancel</a>
                         </div>
                         <form action="/oauth/authorize" method="post" class="pull-right">
                             <a data-target="#consent-carousel" data-slide-to="4" class="btn btn-primary">Back</a>

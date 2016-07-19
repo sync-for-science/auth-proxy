@@ -9,7 +9,6 @@ from injector import Injector
 from ordbok.flask_helper import FlaskOrdbok
 
 from auth_proxy.modules import AppModule, ApplicationModule
-from auth_proxy.services import OAuthService
 from auth_proxy import views, cli
 
 
@@ -26,7 +25,6 @@ def main():
     csrf.init_app(app)
 
     injector = Injector([AppModule(app), ApplicationModule()])
-    injector.get(OAuthService)  # Hacky, but we need to init the singleton
     views.configure_views(app=app, oauth=injector.get(OAuth2Provider), csrf=csrf)
     cli.configure_views(app=app, injector=injector)
 

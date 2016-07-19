@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import uuid
 
+import flask_login
 from flask_oauthlib.provider import OAuth2Provider
 from flask_sqlalchemy import SQLAlchemy
 from injector import inject
@@ -13,6 +14,40 @@ from auth_proxy.models.user import User
 from auth_proxy.proxy import Proxy
 from auth_proxy.proxy.flask import FlaskClient
 from auth_proxy.proxy.requests import RequestsServer
+
+
+class LoginService(object):
+    """ Handle all our login operations.
+    """
+    @inject(db=SQLAlchemy, login_manager=flask_login.LoginManager)
+    def __init__(self, db, login_manager):
+        self.db = db
+        self.login_manager = login_manager
+
+        login_manager.login_view = 'login'
+        login_manager.user_loader(self.load_user)
+
+    def load_user(self, user_id):
+        """ LoginManager user_loader callback.
+        """
+        user = self.db.session.query(User).\
+            filter_by(id=user_id).first()
+
+        return user
+
+    def log_in_user(self, username, password):
+        """ Handle the login process.
+        """
+        user = self.db.session.query(User).\
+            filter_by(username=username).\
+            filter_by(password=password).one()
+
+        flask_login.login_user(user)
+
+    def log_out_user(self):
+        """ Handle the logout process.
+        """
+        flask_login.logout_user()
 
 
 class OAuthService(object):
@@ -56,6 +91,22 @@ class OAuthService(object):
         """
         return self.db.session.query(Token).\
             filter_by(client_id=client_id)
+
+    def authorizations(self):
+        """ Audit all the tokens authorized for a User.
+        """
+        user = flask_login.current_user
+
+        return self.db.session.query(Token).\
+            filter_by(user_id=user.id)
+
+    def revoke_token(self, token_id):
+        """ Revoke an authorized token.
+        """
+        self.db.session.query(Token).\
+            filter_by(id=token_id).\
+            delete()
+        self.db.session.commit()
 
     def show_authorize_prompt(self, client_id):
         """ Provide everything necessary to show the authorize prompt.

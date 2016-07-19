@@ -1,0 +1,38 @@
+{% extends "base.jinja2" %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+
+        <h1>Authorized apps</h1>
+        <hr>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>App</th>
+                    <th>What's shared</th>
+                    <th>Expires</th>
+                    <th>Revoke access?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for authorization in authorizations %}
+                <tr>
+                    <td>{{ authorization.client_id }}</td>
+                    <td>
+                        <ul>
+                            {% for scope in authorization.scopes %}
+                            <li>{{ scope }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td>{{ authorization.expires.strftime('%Y-%m-%d') }}</td>
+                    <td><a href="/revoke/{{ authorization.id }}" rel="post">Revoke</a></td>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</div>
+{% endblock %}
