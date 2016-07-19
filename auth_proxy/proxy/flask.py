@@ -21,6 +21,7 @@ class FlaskClient(Client):
     allowed_resources = [
         'metadata',
         'AllergyIntolerance',
+        'Binary',
         'Condition',
         'DocumentReference',
         'Encounter',
