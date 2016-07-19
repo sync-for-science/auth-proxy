@@ -1,5 +1,30 @@
 {% extends "base.jinja2" %}
 
+{% macro confirm_modal(authorization) %}
+<div class="modal fade" id="confirm-{{ authorization.id }}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <p class="text-center lead">Confirm that you, David Jones, want to <em>stop</em> having your medical information shared with the</p>
+                <h1 class="text-center">{{ authorization.client_id }}</h1>
+                <p>When you stop sharing with the <strong>{{ authorization.client_id }}</strong>, no new information from Healthcare Provider will be shared.</p>
+                <p>As you have already shared information outside Healthcare Provider with the <strong>{{ authorization.client_id }}</strong>, any request you wish to make to change or stop how that information is used must be made by you within the <strong>{{ authorization.client_id }}</strong>.</p>
+            </div>
+            <div class="modal-footer">
+                <div class="pull-left">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+                <div class="pull-right">
+                    <form class="form-inline" action="/revoke/{{ authorization.id }}" method="post">
+                        <button type="submit" class="btn btn-primary">stop sharing</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
 {% block body %}
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
@@ -28,7 +53,11 @@
                         </ul>
                     </td>
                     <td>{{ authorization.expires.strftime('%Y-%m-%d') }}</td>
-                    <td><a href="/revoke/{{ authorization.id }}" rel="post">Revoke</a></td>
+                    <td>
+                        <button type="button" class="btn btn-link" data-toggle="modal" data-target="#confirm-{{ authorization.id }}">Revoke</button>
+                        {{ confirm_modal(authorization) }}
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -39,8 +39,10 @@ class LoginService(object):
         """ Handle the login process.
         """
         user = self.db.session.query(User).\
-            filter_by(username=username).\
-            filter_by(password=password).one()
+            filter_by(username=username).first()
+
+        assert user, 'User not found.'
+        assert user.password == password, 'Incorrect password.'
 
         flask_login.login_user(user)
 

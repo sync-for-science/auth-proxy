@@ -1,10 +1,10 @@
 """ User module """
 from sqlalchemy import (
-    Boolean,
     Column,
     Integer,
     String,
 )
+from sqlalchemy_utils.types.password import PasswordType
 
 from . import Base
 
@@ -18,8 +18,9 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     patient_id = Column(String)
     username = Column(String)
-    password = Column(String)
-    authenticated = Column(Boolean, default=False)
+    password = Column(PasswordType(schemes=['pbkdf2_sha512']))
+
+    authenticated = False
 
     def is_active(self):
         """ True, as all users are active.
@@ -37,6 +38,6 @@ class User(Base):
         return self.authenticated
 
     def is_anonymous(self):
-        """ False, as anonymouse users aren't supported.
+        """ False, as anonymous users aren't supported.
         """
         return False
