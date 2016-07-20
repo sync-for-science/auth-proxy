@@ -8,6 +8,7 @@ Flask-Login==0.3.2
 Flask-OAuthlib==0.9.3
 Flask-SQLAlchemy==2.1
 Flask-WTF==0.12
+furl==0.5.1
 injector==0.9.1
 itsdangerous==0.24
 Jinja2==2.8
@@ -15,6 +16,7 @@ lazy-object-proxy==1.2.2
 MarkupSafe==0.23
 oauthlib==1.1.2
 ordbok==0.1.8
+orderedmultidict==0.7.6
 passlib==1.6.5
 pep8==1.7.0
 py==1.4.31
