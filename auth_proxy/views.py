@@ -10,6 +10,7 @@ from flask import (
     Response,
 )
 from flask_login import login_required
+from furl import furl
 from injector import inject
 
 from auth_proxy import services
@@ -58,9 +59,14 @@ def configure_views(app, oauth, csrf):
             assert 'state' in request.args, 'Missing state.'
 
             client = service.show_authorize_prompt(kwargs['client_id'])
+
+            abort_uri = furl(kwargs['redirect_uri'])
+            abort_uri.args['error'] = 'access_denied'
+
             return render_template('authorize.jinja2',
                                    client=client,
-                                   data=kwargs)
+                                   data=kwargs,
+                                   abort_uri=abort_uri.url)
 
         csrf.protect()
 
