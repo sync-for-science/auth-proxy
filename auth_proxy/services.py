@@ -148,8 +148,18 @@ class OAuthService(object):
     def cb_grantgetter(self, client_id, code):
         """ OAuth2Provider Grant getter.
         """
-        return self.db.session.query(Grant).\
-            filter_by(client_id=client_id, code=code).first()
+        now = datetime.now()
+
+        grant = self.db.session.query(Grant).filter(
+            Grant.client_id == client_id,
+            Grant.code == code,
+            Grant.expires >= now,
+        ).first()
+
+        if grant:
+            grant.session = self.db.session
+
+        return grant
 
     def cb_grantsetter(self, client_id, code, request, *args, **kwargs):
         """ OAuth2Provider Grant setter.
