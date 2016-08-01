@@ -1,4 +1,4 @@
-""" Services module.
+""" OAuth Service module.
 """
 from datetime import datetime, timedelta
 import uuid
@@ -7,49 +7,9 @@ import flask_login
 from flask_oauthlib.provider import OAuth2Provider
 from flask_sqlalchemy import SQLAlchemy
 from injector import inject
-import requests
 
 from auth_proxy.models.oauth import Client, Grant, Token
 from auth_proxy.models.user import User
-from auth_proxy.proxy import Proxy
-from auth_proxy.proxy.flask import FlaskClient
-from auth_proxy.proxy.requests import RequestsServer
-
-
-class LoginService(object):
-    """ Handle all our login operations.
-    """
-    @inject(db=SQLAlchemy, login_manager=flask_login.LoginManager)
-    def __init__(self, db, login_manager):
-        self.db = db
-        self.login_manager = login_manager
-
-        login_manager.login_view = 'login'
-        login_manager.user_loader(self.load_user)
-
-    def load_user(self, user_id):
-        """ LoginManager user_loader callback.
-        """
-        user = self.db.session.query(User).\
-            filter_by(id=user_id).first()
-
-        return user
-
-    def log_in_user(self, username, password):
-        """ Handle the login process.
-        """
-        user = self.db.session.query(User).\
-            filter_by(username=username).first()
-
-        assert user, 'User not found.'
-        assert user.password == password, 'Incorrect password.'
-
-        flask_login.login_user(user)
-
-    def log_out_user(self):
-        """ Handle the logout process.
-        """
-        flask_login.logout_user()
 
 
 class OAuthService(object):
@@ -148,8 +108,13 @@ class OAuthService(object):
     def cb_grantgetter(self, client_id, code):
         """ OAuth2Provider Grant getter.
         """
-        return self.db.session.query(Grant).\
-            filter_by(client_id=client_id, code=code).first()
+        now = datetime.now()
+
+        return self.db.session.query(Grant).filter(
+            Grant.client_id == client_id,
+            Grant.code == code,
+            Grant.expires >= now,
+        ).first()
 
     def cb_grantsetter(self, client_id, code, request, *args, **kwargs):
         """ OAuth2Provider Grant setter.
@@ -218,53 +183,7 @@ class OAuthService(object):
         return new
 
 
-class ProxyService(object):
-    """ Handle proxying the FHIR API.
+def configure(binder):
+    """ Configure this module for the Injector.
     """
-    def conformance(self, url, authorize=None, token=None, register=None):
-        """ Proxy the conformance statement.
-        We need to set the oAuth uris extension though.
-        """
-        headers = {
-            'Accept': 'application/json+fhir',
-        }
-        response = requests.get(url, headers=headers)
-        conformance = response.json()
-
-        extension = {
-            'url': 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
-            'extension': [],
-        }
-
-        if authorize is not None:
-            extension['extension'].append({
-                'url': 'authorize',
-                'valueUri': authorize,
-            })
-
-        if token is not None:
-            extension['extension'].append({
-                'url': 'token',
-                'valueUri': token,
-            })
-
-        if register is not None:
-            extension['extension'].append({
-                'url': 'register',
-                'valueUri': register,
-            })
-
-        security = conformance['rest'][0].get('security', {})
-        security['extension'] = [extension]
-        conformance['rest'][0]['security'] = security
-
-        return conformance
-
-    def api(self, url, request):
-        """ Proxy FHIR API requests.
-        """
-        client = FlaskClient(url, request)
-        server = RequestsServer()
-        proxy = Proxy(client, server)
-
-        return proxy.proxy()
+    binder.bind(OAuthService)

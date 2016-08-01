@@ -6,12 +6,11 @@ from sqlalchemy import (
 )
 from sqlalchemy_utils.types.password import PasswordType
 
-from . import Base
+from auth_proxy.extensions import db
 
 
-class User(Base):
+class User(db.Model):
     """ An application User.
-    TODO: see if this is even necessary.
     """
     __tablename__ = 'user'
 

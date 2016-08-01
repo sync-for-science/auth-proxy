@@ -2,6 +2,7 @@
 astroid==1.4.5
 click==6.6
 colorama==0.3.7
+docopt==0.6.2
 Flask==0.11.1
 Flask-Injector==0.7.1
 Flask-Login==0.3.2
@@ -15,7 +16,6 @@ Jinja2==2.8
 lazy-object-proxy==1.2.2
 MarkupSafe==0.23
 oauthlib==1.1.2
-ordbok==0.1.8
 orderedmultidict==0.7.6
 passlib==1.6.5
 pep8==1.7.0
