@@ -1,5 +1,7 @@
 # pylint: disable=missing-docstring
 """ oAuth models module """
+from datetime import datetime
+
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -67,8 +69,14 @@ class Grant(Base):
 
     _scopes = Column('scopes', Text)
 
+    # Normally this wont be set, but in some cases Grant needs to manage its
+    # own transactions.
+    session = None
+
     def delete(self):
-        self.expires = 0
+        self.expires = datetime.fromtimestamp(0)
+        if self.session:
+            self.session.commit()
 
     @property
     def scopes(self):
