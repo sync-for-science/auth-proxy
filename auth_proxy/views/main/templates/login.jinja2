@@ -13,7 +13,7 @@
         {% endif %}
 
         <form action="/login" method="post">
-            <input type="hidden" name="next" value="{{ request.args.next | e }}" />
+            <input type="hidden" name="next" value="{{ next | e }}" />
             <div class="form-group">
                 <label for="username" class="control-label">Username</label>
                 <input type="text" class="form-control" name="username" id="username" value="demo-smart-user">
