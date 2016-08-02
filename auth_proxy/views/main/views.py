@@ -1,6 +1,8 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+from urllib import parse
+
 from flask import (
     redirect,
     render_template,
@@ -25,7 +27,15 @@ def index():
 @inject(service=LoginService)
 def login(service):
     if request.method == 'GET':
-        return render_template('login.jinja2')
+        # Unquote and re-quote the "next" param because of a bug in werkzeug.
+        # https://github.com/pallets/werkzeug/issues/975
+        url = request.args.get('next', url_for('.index'))
+        parts = list(parse.urlparse(url))
+        params = parse.parse_qsl(parts[4])
+        parts[4] = parse.urlencode(params)
+        url = parse.urlunparse(parts)
+
+        return render_template('login.jinja2', next=url)
 
     try:
         service.log_in_user(request.form['username'],
@@ -37,7 +47,9 @@ def login(service):
 
         return redirect(url_for('.index'))
     except Exception as err:  # pylint: disable=broad-except
-        return render_template('login.jinja2', error=err)
+        return render_template('login.jinja2',
+                               error=err,
+                               next=redirect_to)
 
 
 @main.route('/logout')
