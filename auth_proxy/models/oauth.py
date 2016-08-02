@@ -1,5 +1,7 @@
 # pylint: disable=missing-docstring
 """ oAuth models module """
+from datetime import datetime
+
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -10,10 +12,10 @@ from sqlalchemy import (
     orm
 )
 
-from . import Base
+from auth_proxy.extensions import db
 
 
-class Client(Base):
+class Client(db.Model):
     """ A client is the app which want to use the resource of a user.
     """
     __tablename__ = 'client'
@@ -45,7 +47,7 @@ class Client(Base):
         return []
 
 
-class Grant(Base):
+class Grant(db.Model):
     """ A grant token is created in the authorization flow, and will be
     destroyed when the authorization finished.
     """
@@ -68,7 +70,9 @@ class Grant(Base):
     _scopes = Column('scopes', Text)
 
     def delete(self):
-        self.expires = 0
+        self.expires = datetime.now()
+        # This is not ideal, but FlaskOauth forces it on us
+        db.session.commit()
 
     @property
     def scopes(self):
@@ -77,7 +81,7 @@ class Grant(Base):
         return []
 
 
-class Token(Base):
+class Token(db.Model):
     """ A bearer token is the final token that could be used by the client.
     There are other token types, but bearer token is widely used.
     """
