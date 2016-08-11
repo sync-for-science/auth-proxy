@@ -43,7 +43,7 @@
             </thead>
             <tbody>
                 {% for authorization in authorizations %}
-                <tr>
+                <tr rel="{{ authorization.client_id | e }}">
                     <td>{{ authorization.client_id }}</td>
                     <td>
                         <ul>
