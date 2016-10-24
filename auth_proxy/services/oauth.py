@@ -6,7 +6,7 @@ import uuid
 import flask_login
 from flask_oauthlib.provider import OAuth2Provider
 from flask_sqlalchemy import SQLAlchemy
-from injector import inject
+from injector import inject, singleton
 
 from auth_proxy.models.oauth import Client, Grant, Token
 from auth_proxy.models.user import User
@@ -186,4 +186,5 @@ class OAuthService(object):
 def configure(binder):
     """ Configure this module for the Injector.
     """
-    binder.bind(OAuthService)
+    binder.bind(OAuthService, scope=singleton)
+    binder.injector.get(OAuthService)
