@@ -104,6 +104,10 @@ class FlaskClient(Client):
         except AttributeError:
             scopes = ['patient/*.read']
 
+        # TODO: For some reason, scope is coming through empty, so fill it in
+        if not scopes:
+            scopes = ['patient/*.read']
+
         # Wildcard scopes should be expanded
         try:
             wildcard = scopes.index('patient/*.read')
