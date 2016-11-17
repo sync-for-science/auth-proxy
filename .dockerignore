@@ -3,4 +3,3 @@ ENV
 *.pyc
 node_modules
 __pycache__
-*.sqlite
