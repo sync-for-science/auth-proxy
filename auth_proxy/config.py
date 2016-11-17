@@ -8,7 +8,7 @@ class Config(object):
     SECRET_KEY = 'secret'
 
     DB_MODELS_IMPORTS = ()
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///db.sqlite'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///db/db.sqlite'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     API_SERVER = None
