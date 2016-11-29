@@ -63,7 +63,7 @@ class FlaskClient(Client):
         path = self.orig.view_args.get('path').split('/')
         if len(path) == 1:
             args.append(('_security', self._scope_security()))
-            # args.append(('_security', self._patient_security()))
+            args.append(('_security', self._patient_security()))
 
         # Determine the URL to proxy to
         url = self.url + '?' + parse.urlencode(args)
@@ -100,18 +100,14 @@ class FlaskClient(Client):
         # Get the authorized scopes from the request, or open everything if
         # this is an un-authorized request
         try:
-            scopes = list(self.orig.oauth.scopes)
+            scopes = self.orig.oauth.client.default_scopes
         except AttributeError:
-            scopes = ['patient/*.read']
-
-        # TODO: For some reason, scope is coming through empty, so fill it in
-        if not scopes:
             scopes = ['patient/*.read']
 
         # Wildcard scopes should be expanded
         try:
             wildcard = scopes.index('patient/*.read')
-            scopes[wildcard:wildcard] = self.ccds_scopes
+            scopes[wildcard:wildcard + 1] = self.ccds_scopes
         except ValueError:
             pass
 
@@ -119,7 +115,9 @@ class FlaskClient(Client):
 
     def _patient_security(self):
         """ Determine which Patients the client should be allowed to see.
-
-        TODO: Actually do something here
         """
-        return ','.join(['public'])
+        try:
+            patient = self.orig.oauth.user.patient_id
+            return 'Patient/{}'.format(patient)
+        except AttributeError:
+            return 'public'
