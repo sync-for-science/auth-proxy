@@ -67,6 +67,6 @@ def api_open_fhir_proxy(service, path):
 @api.errorhandler(ForbiddenError)
 def handle_forbidden_error(error):
     response = jsonify({'error': error.message})
-    response.status_code = 401
+    response.status_code = 403
 
     return response

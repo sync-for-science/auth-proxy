@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+import arrow
 from flask import (
     jsonify,
     render_template,
@@ -22,6 +23,7 @@ def oauth_register(service):
     client = service.register(
         client_id=request.form['client_id'],
         client_secret=request.form.get('client_secret'),
+        client_name=request.form['client_name'],
         redirect_uris=request.form['redirect_uris'],
         scopes=request.form['scopes'],
     )
@@ -63,9 +65,16 @@ def cb_oauth_authorize(service, csrf, *args, **kwargs):
         abort_uri = furl(kwargs['redirect_uri'])
         abort_uri.args['error'] = 'access_denied'
 
+        today = arrow.utcnow().format('MMMM D, YYYY')
+        now = arrow.utcnow().format('h:mma')
+        expires = arrow.now().shift(years=1).format('MMMM D, YYYY')
+
         return render_template('authorize.jinja2',
                                client=client,
                                data=kwargs,
+                               today=today,
+                               now=now,
+                               expires=expires,
                                abort_uri=abort_uri.url)
 
     csrf.protect()

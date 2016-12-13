@@ -1,17 +1,17 @@
 {% extends "base.jinja2" %}
 
-{% macro carousel_caption(current) %}
+{% macro carousel_caption(current, next_text) %}
 <div class="carousel-caption">
     {% set prev = current - 1 %}
     {% set next = current + 1 %}
     <div class="pull-left">
-        <a href="{{ abort_uri | e }}" class="btn btn-default">Cancel</a>
-    </div>
-    <div class="pull-right">
         {% if current > 0 %}
         <a data-target="#consent-carousel" data-slide-to="{{ prev }}" class="btn btn-primary">Back</a>
         {% endif %}
-        <a data-target="#consent-carousel" data-slide-to="{{ next }}" class="btn btn-primary">Next</a>
+    </div>
+    <div class="pull-right">
+        <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
+        <a data-target="#consent-carousel" data-slide-to="{{ next }}" class="btn btn-primary">{{ next_text }}</a>
     </div>
 </div>
 {% endmacro %}
@@ -23,68 +23,61 @@
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
-                    <p class="text-center lead">Confirm that the medical information you want shared is from</p>
-                    <h1 class="text-center">Healthcare Provider</h1>
+                    <h1 class="text-center">Health Information Sharing Preview</h1>
+                    <p>You have signed into the {{ config.API_SERVER_NAME }} patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) maintained at {{ config.API_SERVER_NAME }} with a third party, the All of Us Research Program via their research application.</p>
 
-                    {{ carousel_caption(0) }}
+                    <p>You will first be asked to confirm:</p>
+
+                    <ul>
+                        <li>the person whose personally identifiable health information would be shared ({{ current_user.name }})</li>
+                        <li>the organization that maintains the information ({{ config.API_SERVER_NAME }})</li>
+                        <li>the type of information that would be shared</li>
+                        <li>for how long any new information would be shared</li>
+                        <li>the third party that would receive the information (All of Us Research Program)</li>
+                    </ul>
+
+                    <p>You will then have the opportunity to review what you confirmed before you would approve sharing your personally identifiable health information.</p>
+
+                    <p>Once you approve sharing your personally identifiable health information, you, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the All of Us Research Program.</p>
+
+                    <p>Whether you choose to share or not to share your personally identifiable health information with the All of Us Research Program will have no effect on the medical care, benefits, or services that you will receive from {{ config.API_SERVER_NAME }}.</p>
+
+                    {{ carousel_caption(0, 'Begin') }}
                 </div>
 
                 <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for</p>
-                    <h1 class="text-center">David Jones (yourself), 57, male</h1>
+                    <h1 class="text-center">Health Information Sharing</h1>
 
-                    {{ carousel_caption(1) }}
+                    <p>To confirm that you want to share personally identifiable health information check each box:</p>
+
+                    <p>...</p>
+
+                    {{ carousel_caption(1, 'Next') }}
                 </div>
 
                 <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for the app</p>
-                    <h1 class="text-center">{{ client.client_id }}</h1>
+                    <h1 class="text-center">Health Information Sharing Review &amp; Approve</h1>
 
-                    {{ carousel_caption(2) }}
-                </div>
+                    <p>{{ today }} at {{ now }} UTC</p>
 
-                <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for all your</p>
-                    <h1 class="text-center">
-                        {% for scope in data.scopes %}
-                            {{ scope }}<br>
-                        {% endfor %}
-                    </h1>
+                    <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the All of Us Research Program via their research application.</p>
 
-                    {{ carousel_caption(3) }}
-                </div>
+                    <p>My approval to share my personally identifiable health information with the All of Us Research Program applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until {{ expires }}, for the following personally identifiable health Information</p>
 
-                <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for your past as well as future until</p>
-                    <h1 class="text-center">January 31, 2018</h1>
+                    <ul>
+                        <li>...</li>
+                    </ul>
 
-                    {{ carousel_caption(4) }}
-                </div>
+                    <p>By approving sharing my personally identifiable health information with the All of Us Research Program, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the All of Us Research Program.</p>
 
-                <div class="item">
-                    <h1 class="text-center">Review</h1>
-                    <p class="text-center lead">The following medical information will be shared upon your authorization</p>
-                    <dl class="dl-horizontal">
-                        <dt>from</dt>
-                        <dd>Healthcare Provider Organization</dd>
-                        <dt>to</dt>
-                        <dd>{{ client.client_id }}</dd>
-                        <dt>for</dt>
-                        <dd>Electronic Medical Record information</dd>
-                        <dt>Including</dt>
-                        <dd>{% for scope in data.scopes %}
-                            + {{ scope }}<br>
-                        {% endfor %}</dd>
-                        <dt>until</dt>
-                        <dd>January 31, 2018 (including all past data)</dd>
-                    </dl>
+                    <p>I understand that whether I choose to share or not to share my personally identifiable health information with the All of Us Research Program will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
 
                     <div class="carousel-caption">
                         <div class="pull-left">
-                            <a href="{{ abort_uri | e }}" class="btn btn-default">Cancel</a>
+                            <a data-target="#consent-carousel" data-slide-to="2" class="btn btn-primary">Back</a>
                         </div>
                         <form action="/oauth/authorize" method="post" class="pull-right">
-                            <a data-target="#consent-carousel" data-slide-to="4" class="btn btn-primary">Back</a>
+                            <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
                             <input type="hidden" name="client_id" value="{{ data.client_id | e }}" />
@@ -95,7 +88,7 @@
                             <input type="hidden" name="state" value="{{ data.state | e}}" />
                             {% endif %}
 
-                            <button type="submit" class="btn btn-primary" id="authorize">Authorize</button>
+                            <button type="submit" class="btn btn-primary" id="authorize">Approve</button>
                         </form>
                     </div>
                 </div>

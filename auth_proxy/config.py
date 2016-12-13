@@ -12,6 +12,7 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     API_SERVER = None
+    API_SERVER_NAME = 'Healthcare Provider'
     WTF_CSRF_CHECK_DEFAULT = False
 
 

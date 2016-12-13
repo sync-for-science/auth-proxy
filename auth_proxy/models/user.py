@@ -16,6 +16,7 @@ class User(db.Model):
 
     id = Column(Integer, primary_key=True)
     patient_id = Column(String)
+    name = Column(String)
     username = Column(String)
     password = Column(PasswordType(schemes=['pbkdf2_sha512']))
 

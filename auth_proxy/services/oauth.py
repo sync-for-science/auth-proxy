@@ -3,10 +3,12 @@
 from datetime import datetime, timedelta
 import uuid
 
+import arrow
 import flask_login
 from flask_oauthlib.provider import OAuth2Provider
 from flask_sqlalchemy import SQLAlchemy
 from injector import inject, singleton
+from sqlalchemy.orm.exc import NoResultFound
 
 from auth_proxy.models.oauth import Client, Grant, Token
 from auth_proxy.models.user import User
@@ -26,7 +28,7 @@ class OAuthService(object):
         oauth.tokengetter(self.cb_tokengetter)
         oauth.tokensetter(self.cb_tokensetter)
 
-    def register(self, client_id, redirect_uris, scopes, client_secret=None):
+    def register(self, client_id, redirect_uris, scopes, client_name, client_secret=None):
         """ Register new clients.
         """
         if client_secret is None:
@@ -35,8 +37,20 @@ class OAuthService(object):
         client = Client(
             client_id=client_id,
             client_secret=client_secret,
+            client_name=client_name,
             _redirect_uris=redirect_uris,
             _default_scopes=scopes,
+            _security_labels=' '.join([
+                'patient',
+                'medications',
+                'allergies',
+                'immunizations',
+                'problems',
+                'procedures',
+                'vital-signs',
+                'laboratory',
+                'smoking',
+            ]),
         )
         self.db.session.add(client)
         self.db.session.commit()
@@ -156,31 +170,29 @@ class OAuthService(object):
             token : dict
             request : oauthlib.Request
         """
-        tokens = self.db.session.query(Token).\
-            filter_by(client_id=request.client.client_id)
-
-        # Make sure that every client has only one token.
-        for old in tokens:
-            self.db.session.delete(old)
-
-        expires_in = token.get('expires_in')
-        expires = datetime.utcnow() + timedelta(seconds=expires_in)
-
         assert request.user is not None
 
-        new = Token(
-            access_token=token['access_token'],
-            refresh_token=token['refresh_token'],
-            token_type=token['token_type'],
-            _scopes=token['scope'],
-            expires=expires,
-            client_id=request.client.client_id,
-            user=request.user,
-        )
-        self.db.session.add(new)
+        try:
+            today = arrow.now().datetime
+            old = self.db.session.query(Token).\
+                filter_by(client_id=request.client.client_id).\
+                filter(Token.approval_expires >= today).\
+                one()
+            old.update_token(**token)
+        except NoResultFound:
+            old = Token(
+                token_type=token['token_type'],
+                _scopes=token['scope'],
+                client_id=request.client.client_id,
+                user=request.user,
+                approval_expires=arrow.now().shift(years=1).datetime,
+            )
+            old.update_token(**token)
+            self.db.session.add(old)
+
         self.db.session.commit()
 
-        return new
+        return old
 
 
 def configure(binder):
