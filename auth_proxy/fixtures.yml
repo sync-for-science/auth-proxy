@@ -19,7 +19,7 @@ class: !!python/name:auth_proxy.models.oauth.Client
 args:
   client_id: api-test
   client_secret: api-secret
-  name: S4S Research App
+  name: All of Us Research Program
   _redirect_uris: http://dev.syncfor.science:9001/authorized http://s4s.tomwschneider.com/authorized
   _default_scopes: launch/patient patient/*.read offline_access
   _security_labels: patient medications allergies immunizations problems procedures vital-signs laboratory smoking

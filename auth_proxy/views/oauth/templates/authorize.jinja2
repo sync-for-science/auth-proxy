@@ -2,16 +2,26 @@
 
 {% macro carousel_caption(current, next_text) %}
 <div class="carousel-caption">
-    {% set prev = current - 1 %}
-    {% set next = current + 1 %}
     <div class="pull-left">
         {% if current > 0 %}
-        <a data-target="#consent-carousel" data-slide-to="{{ prev }}" class="btn btn-primary">Back</a>
+        <button data-target="#consent-carousel" data-slide="prev" class="btn btn-primary">Back</a>
         {% endif %}
     </div>
     <div class="pull-right">
         <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
-        <a data-target="#consent-carousel" data-slide-to="{{ next }}" class="btn btn-primary">{{ next_text }}</a>
+        <button type="button" data-target="#consent-carousel" data-slide="next" class="btn btn-primary">{{ next_text }}</button>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro consent_item(name, id) %}
+<div class="form-group">
+    <span class="col-xs-4 col-sm-3 col-sm-offset-1">{{ name }}</span>
+    <label class="col-xs-6">{{ caller() }}</label>
+    <div class="col-xs-2">
+        <div class="checkbox">
+            <input type="checkbox" id="{{ id }}">
+        </div>
     </div>
 </div>
 {% endmacro %}
@@ -19,12 +29,12 @@
 {% block body %}
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
-        <div id="consent-carousel" class="carousel" data-ride="carouself">
+        <div id="consent-carousel" class="carousel" data-ride="carousel" data-interval="">
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
                     <h1 class="text-center">Health Information Sharing Preview</h1>
-                    <p>You have signed into the {{ config.API_SERVER_NAME }} patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) maintained at {{ config.API_SERVER_NAME }} with a third party, the All of Us Research Program via their research application.</p>
+                    <p>You have signed into the {{ config.API_SERVER_NAME }} patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) maintained at {{ config.API_SERVER_NAME }} with a third party, the {{ client.name }} via their research application.</p>
 
                     <p>You will first be asked to confirm:</p>
 
@@ -33,24 +43,57 @@
                         <li>the organization that maintains the information ({{ config.API_SERVER_NAME }})</li>
                         <li>the type of information that would be shared</li>
                         <li>for how long any new information would be shared</li>
-                        <li>the third party that would receive the information (All of Us Research Program)</li>
+                        <li>the third party that would receive the information ({{ client.name }})</li>
                     </ul>
 
                     <p>You will then have the opportunity to review what you confirmed before you would approve sharing your personally identifiable health information.</p>
 
-                    <p>Once you approve sharing your personally identifiable health information, you, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the All of Us Research Program.</p>
+                    <p>Once you approve sharing your personally identifiable health information, you, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
 
-                    <p>Whether you choose to share or not to share your personally identifiable health information with the All of Us Research Program will have no effect on the medical care, benefits, or services that you will receive from {{ config.API_SERVER_NAME }}.</p>
+                    <p>Whether you choose to share or not to share your personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that you will receive from {{ config.API_SERVER_NAME }}.</p>
 
                     {{ carousel_caption(0, 'Begin') }}
                 </div>
 
-                <div class="item">
+                <div class="item" id="confirmation-item">
                     <h1 class="text-center">Health Information Sharing</h1>
 
                     <p>To confirm that you want to share personally identifiable health information check each box:</p>
 
-                    <p>...</p>
+                    <form class="form-horizontal">
+                        {% call consent_item('Patient name', 'patient-name') -%}
+                            {{ current_user.name }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Provider name', 'provider-name') -%}
+                            {{ config.API_SERVER_NAME }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Receiver name', 'receiver-name') -%}
+                            {{ client.name }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Share until', 'share-until') -%}
+                            {{ expires }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Information', 'information') -%}
+                            <ul>
+                                {% for label in client.security_labels %}
+                                    <li>{{ label }}</li>
+                                {% endfor %}
+                            </ul>
+                        {%- endcall %}
+                    </form>
+
 
                     {{ carousel_caption(1, 'Next') }}
                 </div>
@@ -58,19 +101,23 @@
                 <div class="item">
                     <h1 class="text-center">Health Information Sharing Review &amp; Approve</h1>
 
-                    <p>{{ today }} at {{ now }} UTC</p>
+                    <div class="well">
+                        <p>{{ today }} at {{ now }} UTC</p>
 
-                    <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the All of Us Research Program via their research application.</p>
+                        <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
 
-                    <p>My approval to share my personally identifiable health information with the All of Us Research Program applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until {{ expires }}, for the following personally identifiable health Information</p>
+                        <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until {{ expires }}, for the following personally identifiable health Information</p>
 
-                    <ul>
-                        <li>...</li>
-                    </ul>
+                        <ul>
+                            {% for label in client.security_labels %}
+                                <li>{{ label }}</li>
+                            {% endfor %}
+                        </ul>
 
-                    <p>By approving sharing my personally identifiable health information with the All of Us Research Program, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the All of Us Research Program.</p>
+                        <p>By approving sharing my personally identifiable health information with the {{ client.name }}, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
 
-                    <p>I understand that whether I choose to share or not to share my personally identifiable health information with the All of Us Research Program will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
+                        <p>I understand that whether I choose to share or not to share my personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
+                    </div>
 
                     <div class="carousel-caption">
                         <div class="pull-left">
@@ -102,7 +149,7 @@
 {{ super() }}
 <style type="text/css">
     #consent-carousel .item {
-        height: 550px;
+        height: 600px;
         padding: 20px 0 0;
     }
     #consent-carousel .item :first-child {
@@ -111,5 +158,43 @@
     #consent-carousel form {
         margin-bottom: 0;
     }
+    #consent-carousel form .form-group {
+        margin-bottom: 0;
+    }
+    #consent-carousel form hr {
+        margin-top: 7px;
+        margin-bottom: 7px;
+    }
+    #consent-carousel .carousel-caption {
+        right: 10%;
+        left: 10%;
+    }
+    #consent-carousel .well {
+        height: 400px;
+        overflow: auto;
+    }
 </style>
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+{% raw %}
+<script>
+    $(function () {
+        var $next = $('#confirmation-item .btn:contains("Next")');
+        var $boxes = $('#confirmation-item :checkbox');
+        var $all = $boxes.add($next);
+
+        $boxes.on('change', function (event) {
+            var $el = $(event.currentTarget);
+            var index = $all.index($el) + 1 + Number($el.is(':checked'));
+            var $after = $all.slice(index);
+
+            $all.attr('disabled', false);
+            $after.attr('disabled', true).attr('checked', false);
+        });
+        $boxes.first().trigger('change');
+    });
+</script>
+{% endraw %}
 {% endblock %}
