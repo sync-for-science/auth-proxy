@@ -74,7 +74,7 @@
 
                     <div class="carousel-caption">
                         <div class="pull-left">
-                            <a data-target="#consent-carousel" data-slide-to="2" class="btn btn-primary">Back</a>
+                            <a data-target="#consent-carousel" data-slide-to="1" class="btn btn-primary">Back</a>
                         </div>
                         <form action="/oauth/authorize" method="post" class="pull-right">
                             <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
@@ -102,7 +102,7 @@
 {{ super() }}
 <style type="text/css">
     #consent-carousel .item {
-        height: 450px;
+        height: 550px;
         padding: 20px 0 0;
     }
     #consent-carousel .item :first-child {

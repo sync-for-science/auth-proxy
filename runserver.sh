@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./manage.py initialize_db
+flask initdb
 supervisorctl start after:*
