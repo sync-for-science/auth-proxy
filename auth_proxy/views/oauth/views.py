@@ -65,15 +65,13 @@ def cb_oauth_authorize(*args, **kwargs):
         abort_uri = furl(kwargs['redirect_uri'])
         abort_uri.args['error'] = 'access_denied'
 
-        today = arrow.utcnow().format('MMMM D, YYYY')
-        now = arrow.utcnow().format('h:mma')
-        expires = arrow.now().shift(years=1).format('MMMM D, YYYY')
+        today = arrow.utcnow().isoformat()
+        expires = arrow.utcnow().shift(years=1).isoformat()
 
         return render_template('authorize.jinja2',
                                client=client,
                                data=kwargs,
                                today=today,
-                               now=now,
                                expires=expires,
                                abort_uri=abort_uri.url)
 

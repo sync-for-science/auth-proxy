@@ -14,13 +14,13 @@
 </div>
 {% endmacro %}
 
-{% macro consent_item(name, id) %}
+{% macro consent_item(name) %}
 <div class="form-group">
-    <span class="col-xs-4 col-sm-3 col-sm-offset-1">{{ name }}</span>
-    <label class="col-xs-6">{{ caller() }}</label>
-    <div class="col-xs-2">
+    <span class="col-xs-4 col-sm-2 col-sm-offset-2">{{ name }}</span>
+    <label class="col-xs-4">{{ caller() }}</label>
+    <div class="col-xs-4">
         <div class="checkbox">
-            <input type="checkbox" id="{{ id }}">
+            <input type="checkbox" class="glyphbox">
         </div>
     </div>
 </div>
@@ -34,23 +34,23 @@
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
                     <h1 class="text-center">Health Information Sharing Preview</h1>
-                    <p>You have signed into the {{ config.API_SERVER_NAME }} patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) maintained at {{ config.API_SERVER_NAME }} with a third party, the {{ client.name }} via their research application.</p>
+                    <p>You have signed into the <strong>{{ config.API_SERVER_NAME }}</strong> patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) maintained at <strong>{{ config.API_SERVER_NAME }}</strong> with a third party, the <strong>{{ client.name }}</strong> via their research application.</p>
 
                     <p>You will first be asked to confirm:</p>
 
                     <ul>
-                        <li>the person whose personally identifiable health information would be shared ({{ current_user.name }})</li>
-                        <li>the organization that maintains the information ({{ config.API_SERVER_NAME }})</li>
-                        <li>the type of information that would be shared</li>
+                        <li>the person whose personally identifiable health information would be shared (<strong>{{ current_user.name }}</strong>)</li>
+                        <li>the organization that maintains the information (<strong>{{ config.API_SERVER_NAME }}</strong>)</li>
+                        <li>the third party that would receive the information (<strong>{{ client.name }}</strong>)</li>
                         <li>for how long any new information would be shared</li>
-                        <li>the third party that would receive the information ({{ client.name }})</li>
+                        <li>the type of information that would be shared</li>
                     </ul>
 
                     <p>You will then have the opportunity to review what you confirmed before you would approve sharing your personally identifiable health information.</p>
 
-                    <p>Once you approve sharing your personally identifiable health information, you, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
+                    <p>Once you approve sharing your personally identifiable health information, you, not <strong>{{ config.API_SERVER_NAME }}</strong>, will be responsible for any risks resulting from sharing this information with the <strong>{{ client.name }}</strong>.</p>
 
-                    <p>Whether you choose to share or not to share your personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that you will receive from {{ config.API_SERVER_NAME }}.</p>
+                    <p>Whether you choose to share or not to share your personally identifiable health information with the <strong>{{ client.name }}</strong> will have no effect on the medical care, benefits, or services that you will receive from <strong>{{ config.API_SERVER_NAME }}</strong>.</p>
 
                     {{ carousel_caption(0, 'Begin') }}
                 </div>
@@ -61,32 +61,32 @@
                     <p>To confirm that you want to share personally identifiable health information check each box:</p>
 
                     <form class="form-horizontal">
-                        {% call consent_item('Patient name', 'patient-name') -%}
+                        {% call consent_item('Patient name') -%}
                             {{ current_user.name }}
                         {%- endcall %}
 
                         <hr>
 
-                        {% call consent_item('Provider name', 'provider-name') -%}
+                        {% call consent_item('Provider name') -%}
                             {{ config.API_SERVER_NAME }}
                         {%- endcall %}
 
                         <hr>
 
-                        {% call consent_item('Receiver name', 'receiver-name') -%}
+                        {% call consent_item('Receiver name') -%}
                             {{ client.name }}
                         {%- endcall %}
 
                         <hr>
 
-                        {% call consent_item('Share until', 'share-until') -%}
-                            {{ expires }}
+                        {% call consent_item('Share until') -%}
+                            <time data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>
                         {%- endcall %}
 
                         <hr>
 
-                        {% call consent_item('Information', 'information') -%}
-                            <ul>
+                        {% call consent_item('Information') -%}
+                            <ul class="list-unstyled">
                                 {% for label in client.security_labels %}
                                     <li>{{ label }}</li>
                                 {% endfor %}
@@ -99,16 +99,16 @@
                 </div>
 
                 <div class="item">
-                    <h1 class="text-center">Health Information Sharing Review &amp; Approve</h1>
+                    <h1 class="text-center">Health Information Sharing Approval</h1>
 
                     <div class="well">
-                        <p>{{ today }} at {{ now }} UTC</p>
+                        <p><time data-format="MMMM D, YYYY [at] h:mma" datetime="{{ today }}"></time></p>
 
                         <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
 
-                        <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until {{ expires }}, for the following personally identifiable health Information</p>
+                        <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
 
-                        <ul>
+                        <ul class="list-unstyled">
                             {% for label in client.security_labels %}
                                 <li>{{ label }}</li>
                             {% endfor %}
@@ -152,8 +152,11 @@
         height: 600px;
         padding: 20px 0 0;
     }
-    #consent-carousel .item :first-child {
+    #consent-carousel .item > :first-child {
         margin-top: 0;
+    }
+    #consent-carousel h1 {
+        margin-bottom: 1em;
     }
     #consent-carousel form {
         margin-bottom: 0;
@@ -172,6 +175,25 @@
     #consent-carousel .well {
         height: 400px;
         overflow: auto;
+        background: #FCF5D8;
+    }
+    input[type="checkbox"].glyphbox {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        line-height: 0;
+        outline: none;
+    }
+    input[type="checkbox"].glyphbox:before {
+        font-family: 'Glyphicons Halflings';
+        font-size: 18px;
+        content: "\e157";
+    }
+    input[type="checkbox"][disabled].glyphbox:before {
+        color: #999;
+    }
+    input[type="checkbox"].glyphbox:checked:before {
+        content: "\e067";
     }
 </style>
 {% endblock %}
@@ -191,9 +213,17 @@
             var $after = $all.slice(index);
 
             $all.attr('disabled', false);
-            $after.attr('disabled', true).attr('checked', false);
+            $after.attr('disabled', true)
+                .attr('checked', false);
         });
         $boxes.first().trigger('change');
+
+        $('time[data-format]').each(function (ix, el) {
+            var $el = $(el);
+            var dt = moment($el.attr('datetime'));
+
+            $el.text(dt.format($el.data('format')));
+        });
     });
 </script>
 {% endraw %}
