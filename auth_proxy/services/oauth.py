@@ -5,7 +5,6 @@ import uuid
 
 import arrow
 import flask_login
-from sqlalchemy.orm.exc import NoResultFound
 
 from auth_proxy.models.oauth import Client, Grant, Token
 from auth_proxy.models.user import User
@@ -109,6 +108,24 @@ class OAuthService(object):
             'patient': user.patient_id,
         }
 
+    def create_authorization(self, client_id, expires, security_labels, user):
+        """ Creates the initial authorization token.
+        """
+        old = self.db.session.query(Token).\
+            filter_by(client_id=client_id).\
+            all()
+        for token in old:
+            self.db.session.delete(token)
+
+        token = Token(
+            client_id=client_id,
+            user=user,
+            approval_expires=arrow.get(expires).datetime,
+            _security_labels=security_labels,
+        )
+        self.db.session.add(token)
+        self.db.session.commit()
+
     def cb_clientgetter(self, client_id):
         """ OAuth2Provider Client getter.
         """
@@ -168,24 +185,15 @@ class OAuthService(object):
         """
         assert request.user is not None
 
-        try:
-            today = arrow.now().datetime
-            old = self.db.session.query(Token).\
-                filter_by(client_id=request.client.client_id).\
-                filter(Token.approval_expires >= today).\
-                one()
-            old.update_token(**token)
-        except NoResultFound:
-            old = Token(
-                token_type=token['token_type'],
-                _scopes=token['scope'],
-                client_id=request.client.client_id,
-                user=request.user,
-                approval_expires=arrow.now().shift(years=1).datetime,
-            )
-            old.update_token(**token)
-            self.db.session.add(old)
+        today = arrow.now().datetime
+        old = self.db.session.query(Token).\
+            filter_by(client_id=request.client.client_id).\
+            filter(Token.approval_expires >= today).\
+            one()
+        new = old.refresh(**token)
 
+        self.db.session.delete(old)
+        self.db.session.add(new)
         self.db.session.commit()
 
-        return old
+        return new

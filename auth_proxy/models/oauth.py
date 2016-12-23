@@ -112,16 +112,33 @@ class Token(db.Model):
     expires = Column(DateTime)
     approval_expires = Column(DateTime)
     _scopes = Column('scopes', Text)
+    _security_labels = Column('security_labels', Text)
 
-    def update_token(self, access_token, refresh_token, expires_in, **kwargs):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.expires = datetime.utcnow() + timedelta(seconds=expires_in)
+    def refresh(self, access_token, refresh_token, expires_in, token_type, scope, **kwargs):
+        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+
+        return Token(
+            client=self.client,
+            user=self.user,
+            approval_expires=self.approval_expires,
+            _security_labels=self._security_labels,
+            token_type=token_type,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires=expires,
+            _scopes=scope,
+        )
 
     @property
     def scopes(self):
         if self._scopes:
             return self._scopes.split()
+        return []
+
+    @property
+    def security_labels(self):
+        if self._security_labels:
+            return self._security_labels.split()
         return []
 
     @property
@@ -131,6 +148,7 @@ class Token(db.Model):
             'access_token': self.access_token,
             'refresh_token': self.refresh_token,
             'approval_expires': self.approval_expires,
+            'security_labels': self.security_labels,
             'expires': self.expires,
             'scopes': self.scopes,
         }

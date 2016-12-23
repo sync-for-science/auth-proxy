@@ -8,7 +8,7 @@ from flask import (
     render_template,
     request,
 )
-from flask_login import login_required
+from flask_login import current_user, login_required
 from furl import furl
 
 from auth_proxy.extensions import csrf, oauthlib
@@ -66,7 +66,7 @@ def cb_oauth_authorize(*args, **kwargs):
         abort_uri.args['error'] = 'access_denied'
 
         today = arrow.utcnow().isoformat()
-        expires = arrow.utcnow().shift(years=1).isoformat()
+        expires = arrow.utcnow().shift(years=1).format('YYYY-MM-DD')
 
         return render_template('authorize.jinja2',
                                client=client,
@@ -76,5 +76,12 @@ def cb_oauth_authorize(*args, **kwargs):
                                abort_uri=abort_uri.url)
 
     csrf.protect()
+
+    oauth_service.create_authorization(
+        client_id=request.form['client_id'],
+        expires=request.form['expires'],
+        security_labels=request.form['security_labels'],
+        user=current_user,
+    )
 
     return True
