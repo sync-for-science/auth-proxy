@@ -46,7 +46,7 @@
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
-                    <h1 class="text-center">Health Information Sharing Preview</h1>
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
                     <p>You have signed into the <strong>{{ config.API_SERVER_NAME }}</strong> patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span> maintained at <strong>{{ config.API_SERVER_NAME }}</strong> with a third party, the <strong>{{ client.name }}</strong> via their research application.</p>
 
                     <p>You will first be asked to confirm:</p>
@@ -69,9 +69,9 @@
                 </div>
 
                 <div class="item" id="confirmation-item">
-                    <h1 class="text-center">Health Information Sharing</h1>
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
 
-                    <p>To confirm that you want to share personally identifiable health information check each box:</p>
+                    <p>To confirm that you want to share personally identifiable health information you must check each box:</p>
 
                     <form class="form-horizontal">
                         {% call consent_item('Patient name') -%}
@@ -93,7 +93,12 @@
                         <hr>
 
                         {% call consent_item('Share until', change=True) -%}
-                            <input type="date" value="{{ expires }}" disabled id="confirm-expires">
+                            <input type="date"
+                                value="{{ expires }}"
+                                min="{{ expires }}"
+                                max="{{ expires | shift(years=2) | format('YYYY-MM-DD') }}"
+                                disabled
+                                id="confirm-expires">
                         {%- endcall %}
 
                         <hr>
@@ -104,7 +109,11 @@
                                 <li class="checkbox">
                                     <label>
                                         <input type="checkbox" checked disabled value="{{ label }}">
-                                        {{ label }}
+                                        {% if label == "vital-signs" %}
+                                            vital signs
+                                        {% else %}
+                                            {{ label }}
+                                        {% endif %}
                                     </label>
                                 </li>
                                 {% endfor %}
@@ -117,7 +126,7 @@
                 </div>
 
                 <div class="item">
-                    <h1 class="text-center">Health Information Sharing Approval</h1>
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
 
                     <div class="well">
                         <p><time data-format="MMMM D, YYYY [at] h:mma" datetime="{{ today }}"></time></p>
@@ -126,15 +135,32 @@
 
                         <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time id="approve-expires" data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
 
-                        <ul class="list-unstyled" id="approve-security-labels">
+                        <ul id="approve-security-labels">
                             {% for label in client.security_labels %}
-                                <li>{{ label }}</li>
+                                {% if label == "vital-signs" %}
+                                    <li>vital signs</li>
+                                {% else %}
+                                    <li>{{ label }}</li>
+                                {% endif %}
                             {% endfor %}
                         </ul>
 
                         <p>By approving sharing my personally identifiable health information with the {{ client.name }}, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
 
                         <p>I understand that whether I choose to share or not to share my personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
+                    </div>
+
+                    <div class="pull-right">
+                        <button type="button" class="btn btn-link" data-toggle="print">
+                            <span class="glyphicon glyphicon-print"></span>
+                            Print
+                        </button>
+                    </div>
+                    <div class="checkbox">
+                        <label class="text-muted">
+                            <input type="checkbox" disabled checked>
+                            Email me a copy of my approval
+                        </label>
                     </div>
 
                     <div class="carousel-caption">
@@ -168,6 +194,14 @@
 {% block css %}
 {{ super() }}
 <style type="text/css">
+    @media print {
+        #consent-carousel .carousel-caption {
+            display: none;
+        }
+        #consent-carousel .well {
+            height: inherit !important;
+        }
+    }
     #consent-carousel .item {
         height: 600px;
         padding: 20px 0 0;
@@ -226,6 +260,11 @@
         color: #337ab7;
         cursor: pointer;
     }
+    [data-toggle="print"] {
+        position: relative;
+        top: -6px;
+        z-index: 1000;
+    }
 </style>
 {% endblock %}
 
@@ -264,7 +303,8 @@
         $('[rel="change"]').on('click', function (event) {
             var $el = $(event.currentTarget);
             var $group = $el.closest('.form-group');
-            var $target = $group.find('> :nth-child(2) input');
+            var $target = $group.find('> :nth-child(2) input')
+                .not('[value="patient"]');
 
             $el.hide();
             $target.attr('disabled', false);
@@ -272,6 +312,10 @@
             if ($target.length === 1) {
                 $target.focus();
             }
+        });
+
+        $('[data-toggle="print"]').on('click', function (event) {
+            window.print();
         });
 
         $('#confirm-expires').on('change', function (event) {
@@ -287,12 +331,23 @@
         $('#confirm-security-labels').on('change', ':checkbox', function (event) {
             var $approve = $('#approve-security-labels').html('');
             var $submit = $('[name="security_labels"]');
-            var inputs = $('#confirm-security-labels :checked').map(function (ix, el) {
-                return $(el).val();
-            }).get();
+            var $inputs = $('#confirm-security-labels :checkbox');
+            var inputs = [];
 
-            $.each(inputs, function (ix, val) {
-                $approve.append('<li>' + val + '</li>');
+            $inputs.each(function (ix, el) {
+                var $el = $(el);
+                var val = $el.val();
+
+                if (val === 'vital-signs') {
+                    val = 'vital signs';
+                }
+
+                if ($el.is(':checked')) {
+                    inputs.push(val);
+                    $approve.append('<li>' + val + '</li>');
+                } else {
+                    $approve.append('<li><del>' + val + '</del></li>');
+                }
             });
             $submit.val(inputs.join(' '));
         });

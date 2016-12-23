@@ -2,7 +2,7 @@
 class: !!python/name:auth_proxy.models.user.User
 args:
   patient_id: smart-1288992
-  username: David Jones
+  username: david-jones
   password: demo-password
   name: David Jones
 ---

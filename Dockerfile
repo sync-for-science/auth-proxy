@@ -10,6 +10,7 @@ RUN apt-get clean
 # Set the environment
 ENV FLASK_APP /usr/src/app/app.py
 ENV API_SERVER http://api:8080/baseDstu2
+ENV API_SERVER_NAME 'Mainline Clinic'
 
 WORKDIR /usr/src/app
 

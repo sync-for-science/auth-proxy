@@ -15,12 +15,13 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['WTF_CSRF_CHECK_DEFAULT'] = False
 
 app.config['API_SERVER'] = os.getenv('API_SERVER')
-app.config['API_SERVER_NAME'] = 'Mainline Healthcare Center'
+app.config['API_SERVER_NAME'] = os.getenv('API_SERVER_NAME')
 
 
 def create_app():
     from auth_proxy import (
         extensions,
+        filters,
     )
     from auth_proxy.views.api.views import BP as api_blueprint
     from auth_proxy.views.cli.views import BP as cli_blueprint
@@ -36,5 +37,7 @@ def create_app():
     extensions.csrf.init_app(app)
     extensions.login_manager.init_app(app)
     extensions.oauthlib.init_app(app)
+
+    assert filters
 
     return app
