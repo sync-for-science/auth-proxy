@@ -327,6 +327,20 @@
             $target.text(dt.format($target.data('format')));
             $submit.val($el.val());
         });
+        $('#confirm-expires').on('blur', function (event) {
+            var $el = $(event.currentTarget);
+            var dt = moment($el.val());
+
+            if (dt > moment($el.attr('max'))) {
+                dt = moment($el.attr('max'));
+            }
+
+            if (dt < moment($el.attr('min'))) {
+                dt = moment($el.attr('min'));
+            }
+
+            $el.val(dt.format('YYYY-MM-DD')).trigger('change');
+        });
 
         $('#confirm-security-labels').on('change', ':checkbox', function (event) {
             var $approve = $('#approve-security-labels').html('');
@@ -346,7 +360,7 @@
                     inputs.push(val);
                     $approve.append('<li>' + val + '</li>');
                 } else {
-                    $approve.append('<li><del>' + val + '</del></li>');
+                    $approve.append('<li><del class="text-muted">' + val + '</del></li>');
                 }
             });
             $submit.val(inputs.join(' '));
