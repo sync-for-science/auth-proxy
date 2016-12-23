@@ -1,27 +1,31 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+import arrow
 from flask import (
+    Blueprint,
     jsonify,
     render_template,
     request,
 )
-from flask_login import login_required
-from flask_wtf.csrf import CsrfProtect
+from flask_login import current_user, login_required
 from furl import furl
-from injector import inject
 
-from auth_proxy.blueprints import oauth
-from auth_proxy.extensions import oauth as oauthlib
-from auth_proxy.services.oauth import OAuthService
+from auth_proxy.extensions import csrf, oauthlib
+from auth_proxy.services import oauth_service
+
+BP = Blueprint('oauth',
+               __name__,
+               template_folder='templates',
+               url_prefix='/oauth')
 
 
-@oauth.route('/register', methods=['POST'])
-@inject(service=OAuthService)
-def oauth_register(service):
-    client = service.register(
+@BP.route('/register', methods=['POST'])
+def oauth_register():
+    client = oauth_service.register(
         client_id=request.form['client_id'],
         client_secret=request.form.get('client_secret'),
+        client_name=request.form['client_name'],
         redirect_uris=request.form['redirect_uris'],
         scopes=request.form['scopes'],
     )
@@ -29,16 +33,15 @@ def oauth_register(service):
     return jsonify(client)
 
 
-@oauth.route('/errors')
+@BP.route('/errors')
 def oauth_errors():
     return jsonify(request.args)
 
 
-@oauth.route('/token', methods=['GET', 'POST'])
+@BP.route('/token', methods=['GET', 'POST'])
 @oauthlib.token_handler
-@inject(service=OAuthService)
-def cb_oauth_token(service, *args, **kwargs):
-    credentials = service.smart_token_credentials(
+def cb_oauth_token(*args, **kwargs):
+    credentials = oauth_service.smart_token_credentials(
         grant_type=request.form.get('grant_type'),
         code=request.form.get('code'),
         refresh_token=request.form.get('refresh_token'),
@@ -47,27 +50,38 @@ def cb_oauth_token(service, *args, **kwargs):
     return credentials
 
 
-@oauth.route('/authorize', methods=['GET', 'POST'])
+@BP.route('/authorize', methods=['GET', 'POST'])
 @oauthlib.authorize_handler
 @login_required
-@inject(service=OAuthService, csrf=CsrfProtect)
-def cb_oauth_authorize(service, csrf, *args, **kwargs):
+def cb_oauth_authorize(*args, **kwargs):
     if request.method == 'GET':
         # Additional SMART checks not required by OAuth spec
         assert 'redirect_uri' in request.args, 'Missing redirect_uri.'
         assert 'scope' in request.args, 'Missing scope.'
         assert 'state' in request.args, 'Missing state.'
 
-        client = service.show_authorize_prompt(kwargs['client_id'])
+        client = oauth_service.show_authorize_prompt(kwargs['client_id'])
 
         abort_uri = furl(kwargs['redirect_uri'])
         abort_uri.args['error'] = 'access_denied'
 
+        today = arrow.utcnow().isoformat()
+        expires = arrow.utcnow().shift(years=1).format('YYYY-MM-DD')
+
         return render_template('authorize.jinja2',
                                client=client,
                                data=kwargs,
+                               today=today,
+                               expires=expires,
                                abort_uri=abort_uri.url)
 
     csrf.protect()
+
+    oauth_service.create_authorization(
+        client_id=request.form['client_id'],
+        expires=request.form['expires'],
+        security_labels=request.form['security_labels'],
+        user=current_user,
+    )
 
     return True

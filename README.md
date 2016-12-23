@@ -5,7 +5,7 @@ An oAuth/proxy layer for FHIR servers. It uses [Flask-OAuthlib](https://flask-oa
 ## Installation
 
 ```
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Configuration
@@ -17,5 +17,5 @@ auth-proxy checks the environment for:
 ## Running
 
 ```
-python -m runserver.py
+flask run
 ```

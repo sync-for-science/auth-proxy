@@ -2,26 +2,28 @@
 """ Views module
 """
 from flask import (
+    Blueprint,
     current_app,
     jsonify,
     request,
     Response,
     url_for,
 )
-from injector import inject
 
-from auth_proxy.blueprints import api
-from auth_proxy.extensions import oauth as oauthlib
+from auth_proxy.extensions import oauthlib
 from auth_proxy.proxy import ForbiddenError
-from auth_proxy.services import oauth, proxy
+from auth_proxy.services import oauth_service, proxy_service
+
+BP = Blueprint('api',
+               __name__,
+               url_prefix='/api')
 
 
-@api.route('/me')
-@inject(service=oauth.OAuthService)
+@BP.route('/me')
 @oauthlib.require_oauth()
-def api_me(service):
+def api_me():
     client_id = request.oauth.client.client_id
-    tokens = service.audit(client_id)
+    tokens = oauth_service.audit(client_id)
 
     return jsonify({
         'client_id': client_id,
@@ -29,44 +31,41 @@ def api_me(service):
     })
 
 
-@api.route('/fhir/metadata')
-@inject(service=proxy.ProxyService)
-def api_fhir_metadata(service):
+@BP.route('/fhir/metadata')
+def api_fhir_metadata():
     url = current_app.config['API_SERVER'] + '/metadata'
-    authorize = url_for('oauth.views.cb_oauth_authorize', _external=True)
-    token = url_for('oauth.views.cb_oauth_token', _external=True)
-    register = url_for('oauth.views.oauth_register', _external=True)
+    authorize = url_for('oauth.cb_oauth_authorize', _external=True)
+    token = url_for('oauth.cb_oauth_token', _external=True)
+    register = url_for('oauth.oauth_register', _external=True)
 
-    conformance = service.conformance(url=url,
-                                      authorize=authorize,
-                                      token=token,
-                                      register=register)
+    conformance = proxy_service.conformance(url=url,
+                                            authorize=authorize,
+                                            token=token,
+                                            register=register)
 
     return jsonify(conformance)
 
 
-@api.route('/fhir/<path:path>', methods=['GET', 'POST'])
-@inject(service=proxy.ProxyService)
+@BP.route('/fhir/<path:path>', methods=['GET', 'POST'])
 @oauthlib.require_oauth()
-def api_fhir_proxy(service, path):
+def api_fhir_proxy(path):
     url = current_app.config['API_SERVER'] + '/' + path
-    response = service.api(url, request)
+    response = proxy_service.api(url, request)
 
     return Response(**response)
 
 
-@api.route('/open-fhir/<path:path>', methods=['GET', 'POST'])
-@inject(service=proxy.ProxyService)
-def api_open_fhir_proxy(service, path):
+@BP.route('/open-fhir/<path:path>', methods=['GET', 'POST'])
+def api_open_fhir_proxy(path):
     url = current_app.config['API_SERVER'] + '/' + path
-    response = service.api(url, request)
+    response = proxy_service.api(url, request)
 
     return Response(**response)
 
 
-@api.errorhandler(ForbiddenError)
+@BP.errorhandler(ForbiddenError)
 def handle_forbidden_error(error):
     response = jsonify({'error': error.message})
-    response.status_code = 401
+    response.status_code = 403
 
     return response

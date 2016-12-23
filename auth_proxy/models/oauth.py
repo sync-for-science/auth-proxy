@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 """ oAuth models module """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import (
     Column,
@@ -22,9 +22,11 @@ class Client(db.Model):
 
     client_id = Column(String, primary_key=True)
     client_secret = Column(String, nullable=False)
+    name = Column(String, nullable=False)
 
     _redirect_uris = Column('redirect_uris', Text)
     _default_scopes = Column('default_scopes', Text)
+    _security_labels = Column('security_labels', Text)
 
     @property
     def client_type(self):
@@ -44,6 +46,12 @@ class Client(db.Model):
     def default_scopes(self):
         if self._default_scopes:
             return self._default_scopes.split()
+        return []
+
+    @property
+    def security_labels(self):
+        if self._security_labels:
+            return self._security_labels.split()
         return []
 
 
@@ -102,7 +110,24 @@ class Token(db.Model):
     access_token = Column(String, unique=True)
     refresh_token = Column(String, unique=True)
     expires = Column(DateTime)
+    approval_expires = Column(DateTime)
     _scopes = Column('scopes', Text)
+    _security_labels = Column('security_labels', Text)
+
+    def refresh(self, access_token, refresh_token, expires_in, token_type, scope, **kwargs):
+        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+
+        return Token(
+            client=self.client,
+            user=self.user,
+            approval_expires=self.approval_expires,
+            _security_labels=self._security_labels,
+            token_type=token_type,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires=expires,
+            _scopes=scope,
+        )
 
     @property
     def scopes(self):
@@ -111,11 +136,19 @@ class Token(db.Model):
         return []
 
     @property
+    def security_labels(self):
+        if self._security_labels:
+            return self._security_labels.split()
+        return []
+
+    @property
     def interest(self):
         return {
             'token_type': self.token_type,
             'access_token': self.access_token,
             'refresh_token': self.refresh_token,
+            'approval_expires': self.approval_expires,
+            'security_labels': self.security_labels,
             'expires': self.expires,
             'scopes': self.scopes,
         }

@@ -35,17 +35,6 @@ class FlaskClient(Client):
         'Practitioner',
         'Procedure',
     ]
-    ccds_scopes = [
-        'patient',
-        'medications',
-        'allergies',
-        'immunizations',
-        'problems',
-        'procedures',
-        'vital-signs',
-        'laboratory',
-        'smoking',
-    ]
 
     def __init__(self, url, orig):
         self.url = url
@@ -97,21 +86,7 @@ class FlaskClient(Client):
         """ Determine which categories the client should be allowed to see
         based on their approved scopes.
         """
-        # Get the authorized scopes from the request, or open everything if
-        # this is an un-authorized request
-        try:
-            scopes = self.orig.oauth.client.default_scopes
-        except AttributeError:
-            scopes = ['patient/*.read']
-
-        # Wildcard scopes should be expanded
-        try:
-            wildcard = scopes.index('patient/*.read')
-            scopes[wildcard:wildcard + 1] = self.ccds_scopes
-        except ValueError:
-            pass
-
-        return ','.join(['public'] + scopes)
+        return ','.join(['public'] + self.orig.oauth.access_token.security_labels)
 
     def _patient_security(self):
         """ Determine which Patients the client should be allowed to see.

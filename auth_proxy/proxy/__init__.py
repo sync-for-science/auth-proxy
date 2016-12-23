@@ -1,6 +1,5 @@
 """ The Proxy module.
 """
-from injector import inject
 
 
 class ForbiddenError(Exception):

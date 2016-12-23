@@ -1,90 +1,176 @@
 {% extends "base.jinja2" %}
 
-{% macro carousel_caption(current) %}
+{% macro carousel_caption(current, next_text) %}
 <div class="carousel-caption">
-    {% set prev = current - 1 %}
-    {% set next = current + 1 %}
     <div class="pull-left">
-        <a href="{{ abort_uri | e }}" class="btn btn-default">Cancel</a>
+        {% if current > 0 %}
+        <button data-target="#consent-carousel" data-slide="prev" class="btn btn-primary">Back</a>
+        {% endif %}
     </div>
     <div class="pull-right">
-        {% if current > 0 %}
-        <a data-target="#consent-carousel" data-slide-to="{{ prev }}" class="btn btn-primary">Back</a>
-        {% endif %}
-        <a data-target="#consent-carousel" data-slide-to="{{ next }}" class="btn btn-primary">Next</a>
+        <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
+        <button type="button" data-target="#consent-carousel" data-slide="next" class="btn btn-primary">{{ next_text }}</button>
     </div>
 </div>
+{% endmacro %}
+
+{% macro consent_item(name, change=False) %}
+<div class="form-group">
+    <div class="col-xs-4 col-sm-2 col-sm-offset-2">
+        {{ name }}
+        {% if change %}
+            <button class="btn btn-link" type="button" rel="change">Change</button>
+        {% endif %}
+    </div>
+    <strong class="col-xs-4">{{ caller() }}</strong>
+    <div class="col-xs-4">
+        <div class="checkbox">
+            <input type="checkbox" class="glyphbox" rel="confirm">
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro what_is_hipaa() %}
+<p class="lead">What is Protected Health Information (PHI)?</p>
+
+<p>The Health Insurance Portability and Accountability Act of 1996 (HIPAA) protects most “individually identifiable health information” held or transmitted by a healthcare providers or its business associates, whether electronically, on paper, or in speech. HIPAA calls this information Protected Health Information (PHI).</p>
+
+<p>Medical records, laboratory reports, and hospital bills, which are part of electronic health records, contain Protected Health Information because they would contain a patient’s name and/or other identifying information (e.g. address, birth date, social security number) associated with the health information in them.</p>
 {% endmacro %}
 
 {% block body %}
 <div class="row">
     <div class="col-md-8 col-md-offset-2">
-        <div id="consent-carousel" class="carousel" data-ride="carouself">
+        <div id="consent-carousel" class="carousel" data-ride="carousel" data-interval="">
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
                 <div class="item active">
-                    <p class="text-center lead">Confirm that the medical information you want shared is from</p>
-                    <h1 class="text-center">Healthcare Provider</h1>
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
+                    <p>You have signed into the <strong>{{ config.API_SERVER_NAME }}</strong> patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span> maintained at <strong>{{ config.API_SERVER_NAME }}</strong> with a third party, the <strong>{{ client.name }}</strong> via their research application.</p>
 
-                    {{ carousel_caption(0) }}
+                    <p>You will first be asked to confirm:</p>
+
+                    <ul>
+                        <li>the person whose personally identifiable health information would be shared (<strong>{{ current_user.name }}</strong>)</li>
+                        <li>the organization that maintains the information (<strong>{{ config.API_SERVER_NAME }}</strong>)</li>
+                        <li>the third party that would receive the information (<strong>{{ client.name }}</strong>)</li>
+                        <li>for how long any new information would be shared</li>
+                        <li>the type of information that would be shared</li>
+                    </ul>
+
+                    <p>You will then have the opportunity to review what you confirmed before you would approve sharing your personally identifiable health information.</p>
+
+                    <p>Once you approve sharing your personally identifiable health information, you, not <strong>{{ config.API_SERVER_NAME }}</strong>, will be responsible for any risks resulting from sharing this information with the <strong>{{ client.name }}</strong>.</p>
+
+                    <p>Whether you choose to share or not to share your personally identifiable health information with the <strong>{{ client.name }}</strong> will have no effect on the medical care, benefits, or services that you will receive from <strong>{{ config.API_SERVER_NAME }}</strong>.</p>
+
+                    {{ carousel_caption(0, 'Begin') }}
+                </div>
+
+                <div class="item" id="confirmation-item">
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
+
+                    <p>To confirm that you want to share personally identifiable health information you must check each box:</p>
+
+                    <form class="form-horizontal">
+                        {% call consent_item('Patient name') -%}
+                            {{ current_user.name }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Provider name') -%}
+                            {{ config.API_SERVER_NAME }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Receiver name') -%}
+                            {{ client.name }}
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Share until', change=True) -%}
+                            <input type="date"
+                                value="{{ expires }}"
+                                min="{{ expires }}"
+                                max="{{ expires | shift(years=2) | format('YYYY-MM-DD') }}"
+                                disabled
+                                id="confirm-expires">
+                        {%- endcall %}
+
+                        <hr>
+
+                        {% call consent_item('Information', change=True) -%}
+                            <ul class="list-unstyled" id="confirm-security-labels">
+                                {% for label in client.security_labels %}
+                                <li class="checkbox">
+                                    <label>
+                                        <input type="checkbox" checked disabled value="{{ label }}">
+                                        {% if label == "vital-signs" %}
+                                            vital signs
+                                        {% else %}
+                                            {{ label }}
+                                        {% endif %}
+                                    </label>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {%- endcall %}
+                    </form>
+
+
+                    {{ carousel_caption(1, 'Next') }}
                 </div>
 
                 <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for</p>
-                    <h1 class="text-center">David Jones (yourself), 57, male</h1>
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
 
-                    {{ carousel_caption(1) }}
-                </div>
+                    <div class="well">
+                        <p><time data-format="MMMM D, YYYY [at] h:mma" datetime="{{ today }}"></time></p>
 
-                <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for the app</p>
-                    <h1 class="text-center">{{ client.client_id }}</h1>
+                        <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
 
-                    {{ carousel_caption(2) }}
-                </div>
+                        <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time id="approve-expires" data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
 
-                <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for all your</p>
-                    <h1 class="text-center">
-                        {% for scope in data.scopes %}
-                            {{ scope }}<br>
-                        {% endfor %}
-                    </h1>
+                        <ul id="approve-security-labels">
+                            {% for label in client.security_labels %}
+                                {% if label == "vital-signs" %}
+                                    <li>vital signs</li>
+                                {% else %}
+                                    <li>{{ label }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
 
-                    {{ carousel_caption(3) }}
-                </div>
+                        <p>By approving sharing my personally identifiable health information with the {{ client.name }}, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
 
-                <div class="item">
-                    <p class="text-center lead">Confirm that the medical information you want shared is for your past as well as future until</p>
-                    <h1 class="text-center">January 31, 2018</h1>
+                        <p>I understand that whether I choose to share or not to share my personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
+                    </div>
 
-                    {{ carousel_caption(4) }}
-                </div>
-
-                <div class="item">
-                    <h1 class="text-center">Review</h1>
-                    <p class="text-center lead">The following medical information will be shared upon your authorization</p>
-                    <dl class="dl-horizontal">
-                        <dt>from</dt>
-                        <dd>Healthcare Provider Organization</dd>
-                        <dt>to</dt>
-                        <dd>{{ client.client_id }}</dd>
-                        <dt>for</dt>
-                        <dd>Electronic Medical Record information</dd>
-                        <dt>Including</dt>
-                        <dd>{% for scope in data.scopes %}
-                            + {{ scope }}<br>
-                        {% endfor %}</dd>
-                        <dt>until</dt>
-                        <dd>January 31, 2018 (including all past data)</dd>
-                    </dl>
+                    <div class="pull-right">
+                        <button type="button" class="btn btn-link" data-toggle="print">
+                            <span class="glyphicon glyphicon-print"></span>
+                            Print
+                        </button>
+                    </div>
+                    <div class="checkbox">
+                        <label class="text-muted">
+                            <input type="checkbox" disabled checked>
+                            Email me a copy of my approval
+                        </label>
+                    </div>
 
                     <div class="carousel-caption">
                         <div class="pull-left">
-                            <a href="{{ abort_uri | e }}" class="btn btn-default">Cancel</a>
+                            <a data-target="#consent-carousel" data-slide-to="1" class="btn btn-primary">Back</a>
                         </div>
                         <form action="/oauth/authorize" method="post" class="pull-right">
-                            <a data-target="#consent-carousel" data-slide-to="4" class="btn btn-primary">Back</a>
+                            <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
+                            <input type="hidden" name="expires" value="{{ expires }}" />
+                            <input type="hidden" name="security_labels" value="{{ client.security_labels | join(' ') | e }}" />
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
                             <input type="hidden" name="client_id" value="{{ data.client_id | e }}" />
@@ -95,7 +181,7 @@
                             <input type="hidden" name="state" value="{{ data.state | e}}" />
                             {% endif %}
 
-                            <button type="submit" class="btn btn-primary" id="authorize">Authorize</button>
+                            <button type="submit" class="btn btn-primary" id="authorize">Approve</button>
                         </form>
                     </div>
                 </div>
@@ -108,15 +194,178 @@
 {% block css %}
 {{ super() }}
 <style type="text/css">
+    @media print {
+        #consent-carousel .carousel-caption {
+            display: none;
+        }
+        #consent-carousel .well {
+            height: inherit !important;
+        }
+    }
     #consent-carousel .item {
-        height: 450px;
+        height: 600px;
         padding: 20px 0 0;
     }
-    #consent-carousel .item :first-child {
+    #consent-carousel .item > :first-child {
         margin-top: 0;
+    }
+    #consent-carousel h1 {
+        margin-bottom: 1em;
     }
     #consent-carousel form {
         margin-bottom: 0;
     }
+    #consent-carousel form .form-group {
+        margin-bottom: 0;
+    }
+    #consent-carousel form hr {
+        margin-top: 7px;
+        margin-bottom: 7px;
+    }
+    #consent-carousel .carousel-caption {
+        right: 10%;
+        left: 10%;
+    }
+    #consent-carousel .well {
+        height: 400px;
+        overflow: auto;
+        background: #F4EDD7;
+    }
+    #confirmation-item li.checkbox {
+        min-height: inherit;
+        padding-top: 0;
+    }
+    input[type="checkbox"].glyphbox {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        outline: none;
+        line-height: 0;
+    }
+    input[type="checkbox"].glyphbox:before {
+        font-family: 'Glyphicons Halflings';
+        font-size: 18px;
+        content: "\e157";
+    }
+    input[type="checkbox"][disabled].glyphbox:before {
+        color: #CCC;
+    }
+    input[type="checkbox"].glyphbox:checked:before {
+        content: "\e067";
+    }
+    input[type="checkbox"].glyphbox:active:before {
+        opacity: .8;
+    }
+    [data-toggle="popover"] {
+        color: #337ab7;
+        cursor: pointer;
+    }
+    [data-toggle="print"] {
+        position: relative;
+        top: -6px;
+        z-index: 1000;
+    }
 </style>
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+{% raw %}
+<script>
+    $(function () {
+        var $next = $('#confirmation-item .btn:contains("Next")');
+        var $boxes = $('#confirmation-item [rel="confirm"]');
+        var $all = $boxes.add($next);
+
+        $boxes.on('change', function (event) {
+            var $el = $(event.currentTarget);
+            var index = $all.index($el) + 1 + Number($el.is(':checked'));
+            var $after = $all.slice(index);
+
+            $all.attr('disabled', false);
+            $after.attr('disabled', true)
+                .attr('checked', false);
+        });
+        $boxes.first().trigger('change');
+
+        $('[data-toggle="popover"]').popover();
+        $('[data-slide]').on('click', function() {
+            $('[data-toggle="popover"]').popover('hide');
+        });
+
+        $('time[data-format]').each(function (ix, el) {
+            var $el = $(el);
+            var dt = moment($el.attr('datetime'));
+
+            $el.text(dt.format($el.data('format')));
+        });
+
+        $('[rel="change"]').on('click', function (event) {
+            var $el = $(event.currentTarget);
+            var $group = $el.closest('.form-group');
+            var $target = $group.find('> :nth-child(2) input')
+                .not('[value="patient"]');
+
+            $el.hide();
+            $target.attr('disabled', false);
+
+            if ($target.length === 1) {
+                $target.focus();
+            }
+        });
+
+        $('[data-toggle="print"]').on('click', function (event) {
+            window.print();
+        });
+
+        $('#confirm-expires').on('change', function (event) {
+            var $el = $(event.currentTarget);
+            var $target = $('#approve-expires');
+            var dt = moment($el.val());
+            var $submit = $('[name="expires"]');
+
+            $target.text(dt.format($target.data('format')));
+            $submit.val($el.val());
+        });
+        $('#confirm-expires').on('blur', function (event) {
+            var $el = $(event.currentTarget);
+            var dt = moment($el.val());
+
+            if (dt > moment($el.attr('max'))) {
+                dt = moment($el.attr('max'));
+            }
+
+            if (dt < moment($el.attr('min'))) {
+                dt = moment($el.attr('min'));
+            }
+
+            $el.val(dt.format('YYYY-MM-DD')).trigger('change');
+        });
+
+        $('#confirm-security-labels').on('change', ':checkbox', function (event) {
+            var $approve = $('#approve-security-labels').html('');
+            var $submit = $('[name="security_labels"]');
+            var $inputs = $('#confirm-security-labels :checkbox');
+            var inputs = [];
+
+            $inputs.each(function (ix, el) {
+                var $el = $(el);
+                var val = $el.val();
+
+                if (val === 'vital-signs') {
+                    val = 'vital signs';
+                }
+
+                if ($el.is(':checked')) {
+                    inputs.push(val);
+                    $approve.append('<li>' + val + '</li>');
+                } else {
+                    $approve.append('<li><del class="text-muted">' + val + '</del></li>');
+                }
+            });
+            $submit.val(inputs.join(' '));
+        });
+    });
+</script>
+{% endraw %}
 {% endblock %}
