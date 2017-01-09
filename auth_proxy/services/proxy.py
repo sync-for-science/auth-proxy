@@ -10,10 +10,13 @@ from auth_proxy.proxy.requests import RequestsServer
 class ProxyService(object):
     """ Handle proxying the FHIR API.
     """
-    def conformance(self, url, authorize=None, token=None, register=None):
+    def conformance(self, url, extensions=None):
         """ Proxy the conformance statement.
         We need to set the oAuth uris extension though.
         """
+        if not extensions:
+            extensions = []
+
         headers = {
             'Accept': 'application/json+fhir',
         }
@@ -25,22 +28,10 @@ class ProxyService(object):
             'extension': [],
         }
 
-        if authorize is not None:
+        for url, valueUri in extensions.items():
             extension['extension'].append({
-                'url': 'authorize',
-                'valueUri': authorize,
-            })
-
-        if token is not None:
-            extension['extension'].append({
-                'url': 'token',
-                'valueUri': token,
-            })
-
-        if register is not None:
-            extension['extension'].append({
-                'url': 'register',
-                'valueUri': register,
+                'url': url,
+                'valueUri': valueUri,
             })
 
         security = conformance['rest'][0].get('security', {})
