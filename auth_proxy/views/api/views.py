@@ -34,14 +34,14 @@ def api_me():
 @BP.route('/fhir/metadata')
 def api_fhir_metadata():
     url = current_app.config['API_SERVER'] + '/metadata'
-    authorize = url_for('oauth.cb_oauth_authorize', _external=True)
-    token = url_for('oauth.cb_oauth_token', _external=True)
-    register = url_for('oauth.oauth_register', _external=True)
+    extensions = {
+        'authorize': url_for('oauth.cb_oauth_authorize', _external=True),
+        'token': url_for('oauth.cb_oauth_token', _external=True),
+        'register': url_for('oauth.oauth_register', _external=True),
+        'manage': url_for('main.apps', _external=True),
+    }
 
-    conformance = proxy_service.conformance(url=url,
-                                            authorize=authorize,
-                                            token=token,
-                                            register=register)
+    conformance = proxy_service.conformance(url, extensions)
 
     return jsonify(conformance)
 
