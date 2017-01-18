@@ -90,25 +90,17 @@ class OAuthService(object):
     def smart_token_credentials(self, grant_type, code=None, refresh_token=None):
         """ Provide additional credentials required by a SMART token request.
         """
-        if grant_type == 'authorization_code':
-            grant = self.db.session.query(Grant).\
-                filter_by(code=code).first()
-            user = getattr(grant, 'user', None)
-        elif grant_type == 'refresh_token':
+        if grant_type == 'refresh_token':
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
-            user = getattr(token, 'user', None)
-        else:
-            user = None
 
-        if user is None:
-            return None
+            return {
+                'patient': token.patient_id,
+            }
 
-        return {
-            'patient': user.patient_id,
-        }
+        return None
 
-    def create_authorization(self, client_id, expires, security_labels, user):
+    def create_authorization(self, client_id, expires, security_labels, user, patient_id):
         """ Creates the initial authorization token.
         """
         old = self.db.session.query(Token).\
@@ -122,6 +114,7 @@ class OAuthService(object):
             user=user,
             approval_expires=arrow.get(expires).datetime,
             _security_labels=security_labels,
+            patient_id=patient_id,
         )
         self.db.session.add(token)
         self.db.session.commit()

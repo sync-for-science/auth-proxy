@@ -45,14 +45,59 @@
         <div id="consent-carousel" class="carousel" data-ride="carousel" data-interval="">
             <!-- Wrapper for slides -->
             <div class="carousel-inner" role="listbox">
-                <div class="item active">
+                <div class="item" id="select-patient-item">
+                    <h2 class="text-center">Who are you representing?</h2>
+
+                    <div class="row">
+                        <div class="col-md-6 col-md-offset-3">
+                            <div id="patients" class="list-group">
+                                {% for patient in current_user.patients %}
+                                <button type="button" class="list-group-item" data-patient-id="{{ patient.patient_id }}" data-patient-name="{{ patient.name }}">
+                                    {{ patient.name }}
+                                    {% if patient.is_user %}(Yourself){% endif %}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="item" id="intro-item">
                     <h2 class="text-center">Personal Health Information Sharing</h2>
-                    <p>You have signed into the <strong>{{ config.API_SERVER_NAME }}</strong> patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law) <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span> maintained at <strong>{{ config.API_SERVER_NAME }}</strong> with a third party, the <strong>{{ client.name }}</strong> via their research application.</p>
+                    {% if current_user.patients|length > 1 %}
+                        <p>
+                            As the legal personal representative of
+                            <strong rel="patient-name">Bridget Jones</strong>,
+                            you have signed into the
+                            <strong>{{ config.API_SERVER_NAME }}</strong>
+                            patient portal to instruct
+                            <strong>{{ config.API_SERVER_NAME }}</strong>
+                            to electronically share the personally identifiable health information (including Protected Health Information as understood under the HIPAA law)
+                            <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span>
+                            of <strong rel="patient-name">Bridget Jones</strong>
+                            with the <strong>{{ client.name }}</strong>,
+                            via their research application.
+                        </p>
+                    {% else %}
+                        <p>
+                            You have signed into the 
+                            <strong>{{ config.API_SERVER_NAME }}</strong>
+                            patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law)
+                            <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span>
+                            maintained at <strong>{{ config.API_SERVER_NAME }}</strong>
+                            with a third party, the
+                            <strong>{{ client.name }}</strong>
+                            via their research application.
+                        </p>
+                    {% endif %}
 
                     <p>You will first be asked to confirm:</p>
 
                     <ul>
-                        <li>the person whose personally identifiable health information would be shared (<strong>{{ current_user.name }}</strong>)</li>
+                        {% if current_user.patients|length > 1 %}
+                        <li>the person who is the personal representative of <span rel="patient-name">{{ current_user.name }}</span> (<strong>{{ current_user.name }}</strong>)</li>
+                        {% endif %}
+                        <li>the person whose personally identifiable health information would be shared (<strong rel="patient-name">{{ current_user.name }}</strong>)</li>
                         <li>the organization that maintains the information (<strong>{{ config.API_SERVER_NAME }}</strong>)</li>
                         <li>the third party that would receive the information (<strong>{{ client.name }}</strong>)</li>
                         <li>for how long any new information would be shared</li>
@@ -74,8 +119,16 @@
                     <p>To confirm that you want to share personally identifiable health information you must check each box:</p>
 
                     <form class="form-horizontal">
+                        {% if current_user.patients|length > 1 %}
+                            {% call consent_item('Representative name') -%}
+                                {{ current_user.name }}
+                            {%- endcall %}
+
+                            <hr>
+                        {% endif %}
+
                         {% call consent_item('Patient name') -%}
-                            {{ current_user.name }}
+                            <span rel="patient-name">{{ current_user.name }}</span>
                         {%- endcall %}
 
                         <hr>
@@ -131,7 +184,11 @@
                     <div class="well">
                         <p><time data-format="MMMM D, YYYY [at] h:mma" datetime="{{ today }}"></time></p>
 
-                        <p>I, {{ current_user.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
+                        {% if current_user.patients|length > 1 %}
+                            <p>I, {{ current_user.name }}, am the legal personal representative of <span rel="patient-name">{{ current_user.name }}</span>. I instruct and approve {{ config.API_SERVER_NAME }} to share the personally identifiable health information (including Protected Health Information as understood under the HIPAA law) of <span rel="patient-name">{{ current_user.name }}</span> with the {{ client.name }}, via their research application.</p>
+                        {% else %}
+                            <p>I, <span rel="patient-name">{{ current_user.name }}</span>, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
+                        {% endif %}
 
                         <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time id="approve-expires" data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
 
@@ -177,6 +234,7 @@
                             <input type="hidden" name="scope" value="{{ data.scopes | join(' ') | e }}" />
                             <input type="hidden" name="response_type" value="{{ data.response_type | e }}" />
                             <input type="hidden" name="redirect_uri" value="{{ data.redirect_uri | e }}" />
+                            <input type="hidden" name="patient_id" />
                             {% if data.state %}
                             <input type="hidden" name="state" value="{{ data.state | e}}" />
                             {% endif %}
@@ -195,6 +253,7 @@
 {{ super() }}
 <style type="text/css">
     @media print {
+        #consent-carousel [data-toggle="print"],
         #consent-carousel .carousel-caption {
             display: none;
         }
@@ -270,102 +329,5 @@
 
 {% block javascript %}
 {{ super() }}
-{% raw %}
-<script>
-    $(function () {
-        var $next = $('#confirmation-item .btn:contains("Next")');
-        var $boxes = $('#confirmation-item [rel="confirm"]');
-        var $all = $boxes.add($next);
-
-        $boxes.on('change', function (event) {
-            var $el = $(event.currentTarget);
-            var index = $all.index($el) + 1 + Number($el.is(':checked'));
-            var $after = $all.slice(index);
-
-            $all.attr('disabled', false);
-            $after.attr('disabled', true)
-                .attr('checked', false);
-        });
-        $boxes.first().trigger('change');
-
-        $('[data-toggle="popover"]').popover();
-        $('[data-slide]').on('click', function() {
-            $('[data-toggle="popover"]').popover('hide');
-        });
-
-        $('time[data-format]').each(function (ix, el) {
-            var $el = $(el);
-            var dt = moment($el.attr('datetime'));
-
-            $el.text(dt.format($el.data('format')));
-        });
-
-        $('[rel="change"]').on('click', function (event) {
-            var $el = $(event.currentTarget);
-            var $group = $el.closest('.form-group');
-            var $target = $group.find('> :nth-child(2) input')
-                .not('[value="patient"]');
-
-            $el.hide();
-            $target.attr('disabled', false);
-
-            if ($target.length === 1) {
-                $target.focus();
-            }
-        });
-
-        $('[data-toggle="print"]').on('click', function (event) {
-            window.print();
-        });
-
-        $('#confirm-expires').on('change', function (event) {
-            var $el = $(event.currentTarget);
-            var $target = $('#approve-expires');
-            var dt = moment($el.val());
-            var $submit = $('[name="expires"]');
-
-            $target.text(dt.format($target.data('format')));
-            $submit.val($el.val());
-        });
-        $('#confirm-expires').on('blur', function (event) {
-            var $el = $(event.currentTarget);
-            var dt = moment($el.val());
-
-            if (dt > moment($el.attr('max'))) {
-                dt = moment($el.attr('max'));
-            }
-
-            if (dt < moment($el.attr('min'))) {
-                dt = moment($el.attr('min'));
-            }
-
-            $el.val(dt.format('YYYY-MM-DD')).trigger('change');
-        });
-
-        $('#confirm-security-labels').on('change', ':checkbox', function (event) {
-            var $approve = $('#approve-security-labels').html('');
-            var $submit = $('[name="security_labels"]');
-            var $inputs = $('#confirm-security-labels :checkbox');
-            var inputs = [];
-
-            $inputs.each(function (ix, el) {
-                var $el = $(el);
-                var val = $el.val();
-
-                if (val === 'vital-signs') {
-                    val = 'vital signs';
-                }
-
-                if ($el.is(':checked')) {
-                    inputs.push(val);
-                    $approve.append('<li>' + val + '</li>');
-                } else {
-                    $approve.append('<li><del class="text-muted">' + val + '</del></li>');
-                }
-            });
-            $submit.val(inputs.join(' '));
-        });
-    });
-</script>
-{% endraw %}
+<script src="/static/authorize.js"></script>
 {% endblock %}

@@ -82,6 +82,7 @@ def cb_oauth_authorize(*args, **kwargs):
         expires=request.form['expires'],
         security_labels=request.form['security_labels'],
         user=current_user,
+        patient_id=request.form['patient_id'],
     )
 
     return True
