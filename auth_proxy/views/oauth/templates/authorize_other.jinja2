@@ -1,0 +1,83 @@
+{% extends "authorize_base.jinja2" %}
+
+{% block intro_item %}
+    <p>
+        As the legal personal representative of
+        <strong>{{ patient.name }}</strong>
+        you have signed into the
+        <strong>{{ config.API_SERVER_NAME }}</strong>
+        patient portal to instruct
+        <strong>{{ config.API_SERVER_NAME }}</strong>
+        to electronically share the personally identifiable health information (including Protected Health Information as understood under the HIPAA law)
+        <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span>
+        of <strong>{{ patient.name }}</strong>
+        with the <strong>{{ client.name }}</strong>,
+        via their research application.
+    </p>
+
+    <p>You will first be asked to confirm:</p>
+
+    <ul>
+        <li>the person who is the personal representative of {{ patient.name }} (<strong>{{ current_user.name }}</strong>)</li>
+        <li>the person whose personally identifiable health information would be shared (<strong rel="patient-name">{{ patient.name }}</strong>)</li>
+        <li>the organization that maintains the information (<strong>{{ config.API_SERVER_NAME }}</strong>)</li>
+        <li>the third party that would receive the information (<strong>{{ client.name }}</strong>)</li>
+        <li>for how long any new information would be shared</li>
+        <li>the type of information that would be shared</li>
+    </ul>
+
+    <p>
+        You will then be asked to review your responses and approve (or not) sharing the personally
+        identifiable health information of <strong>{{ patient.name }}</strong> by electronically signing this form.
+    </p>
+
+    <p>
+        Once the <strong>{{ client.name }}</strong> receives the personally identifiable health information of
+        <strong>{{ patient.name }}</strong>, you, not <strong>{{ config.API_SERVER_NAME }}</strong>, will be responsible for any risks resulting from sharing
+        it with the <strong>{{ client.name }}</strong>.
+    </p>
+
+    <p>
+        Your decision to share (or not) the health information of <strong>{{ patient.name }}</strong> with the <strong>{{ client.name }}</strong>
+        will have no effect on the medical care, benefits, or services that <strong>{{ patient.name }}</strong>
+        will receive from <strong>{{ config.API_SERVER_NAME }}</strong>.
+    </p>
+{% endblock %}
+
+{% block confirmation_form %}
+    {% call consent_item('Representative name') -%}
+        {{ current_user.name }}
+    {%- endcall %}
+
+    <hr>
+
+    {{ super() }}
+{% endblock %}
+
+{% block confirm_item %}
+    <p>I, {{ current_user.name }}, am the legal personal representative of {{ patient.name }}. I instruct and approve {{ config.API_SERVER_NAME }} to share the personally identifiable health information (including Protected Health Information as understood under the HIPAA law) of {{ patient.name }} with the {{ client.name }}, via their research application.</p>
+
+    <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time id="approve-expires" data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
+
+    <ul id="approve-security-labels">
+        {% for label in client.security_labels %}
+            {% if label == "vital-signs" %}
+                <li>vital signs</li>
+            {% else %}
+                <li>{{ label }}</li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+
+    <p>
+        I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing the
+        personally identifiable health information of {{ patient.name }} with the {{ client.name }} once the
+        {{ client.name }} receives the information.
+    </p>
+
+    <p>
+        I understand that whether I share the personally identifiable health information of {{ patient.name }} with the
+        {{ client.name }} or not will have no effect on the medical care, benefits, or services that
+        {{ patient.name }} will receive from {{ config.API_SERVER_NAME }}.
+    </p>
+{% endblock %}

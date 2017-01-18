@@ -90,15 +90,20 @@ class OAuthService(object):
     def smart_token_credentials(self, grant_type, code=None, refresh_token=None):
         """ Provide additional credentials required by a SMART token request.
         """
-        if grant_type == 'refresh_token':
+        if grant_type == 'authorization_code':
+            grant = self.db.session.query(Grant).\
+                filter_by(code=code).first()
+            token = self.db.session.query(Token).\
+                filter_by(client=grant.client).\
+                filter_by(user=grant.user).\
+                first()
+        elif grant_type == 'refresh_token':
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
 
-            return {
-                'patient': token.patient_id,
-            }
-
-        return None
+        return {
+            'patient': token.patient_id,
+        }
 
     def create_authorization(self, client_id, expires, security_labels, user, patient_id):
         """ Creates the initial authorization token.

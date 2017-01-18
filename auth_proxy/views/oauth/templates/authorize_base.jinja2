@@ -1,0 +1,247 @@
+{% extends "base.jinja2" %}
+
+{% macro carousel_caption(current, next_text) %}
+<div class="carousel-caption">
+    {% if current > 0 %}
+    <div class="pull-left">
+        <button data-target="#consent-carousel" data-slide="prev" class="btn btn-primary">Back</a>
+    </div>
+    {% endif %}
+    <div class="pull-right">
+        <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
+        <button type="button" data-target="#consent-carousel" data-slide="next" class="btn btn-primary">{{ next_text }}</button>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro consent_item(name, change=False) %}
+<div class="form-group">
+    <div class="col-xs-4 col-sm-3 col-sm-offset-1">
+        {{ name }}
+        {% if change %}
+            <button class="btn btn-link" type="button" rel="change">Change</button>
+        {% endif %}
+    </div>
+    <strong class="col-xs-4">{{ caller() }}</strong>
+    <div class="col-xs-4">
+        <div class="checkbox">
+            <input type="checkbox" class="glyphbox" rel="confirm">
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro what_is_hipaa() %}
+<p class="lead">What is Protected Health Information (PHI)?</p>
+
+<p>The Health Insurance Portability and Accountability Act of 1996 (HIPAA) protects most “individually identifiable health information” held or transmitted by a healthcare providers or its business associates, whether electronically, on paper, or in speech. HIPAA calls this information Protected Health Information (PHI).</p>
+
+<p>Medical records, laboratory reports, and hospital bills, which are part of electronic health records, contain Protected Health Information because they would contain a patient’s name and/or other identifying information (e.g. address, birth date, social security number) associated with the health information in them.</p>
+{% endmacro %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div id="consent-carousel" class="carousel" data-ride="carousel" data-interval="">
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner" role="listbox">
+
+                <div class="item active" id="intro-item">
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
+
+                    {% block intro_item %}{% endblock %}
+
+                    {{ carousel_caption(0, 'Begin') }}
+                </div>
+
+                <div class="item" id="confirmation-item">
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
+
+                    <p>To confirm that you want to share personally identifiable health information you must check each box:</p>
+
+                    <form class="form-horizontal">
+                        {% block confirmation_form %}
+                            {% call consent_item('Patient name') -%}
+                                {{ patient.name }}
+                            {%- endcall %}
+
+                            <hr>
+
+                            {% call consent_item('Provider name') -%}
+                                {{ config.API_SERVER_NAME }}
+                            {%- endcall %}
+
+                            <hr>
+
+                            {% call consent_item('Receiver name') -%}
+                                {{ client.name }}
+                            {%- endcall %}
+
+                            <hr>
+
+                            {% call consent_item('Share until', change=True) -%}
+                                <input type="date"
+                                    value="{{ expires }}"
+                                    min="{{ expires }}"
+                                    max="{{ expires | shift(years=2) | format('YYYY-MM-DD') }}"
+                                    disabled
+                                    id="confirm-expires">
+                            {%- endcall %}
+
+                            <hr>
+
+                            {% call consent_item('Information', change=True) -%}
+                                <ul class="list-unstyled" id="confirm-security-labels">
+                                    {% for label in client.security_labels %}
+                                    <li class="checkbox">
+                                        <label>
+                                            <input type="checkbox" checked disabled value="{{ label }}">
+                                            {% if label == "vital-signs" %}
+                                                vital signs
+                                            {% else %}
+                                                {{ label }}
+                                            {% endif %}
+                                        </label>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {%- endcall %}
+                        {% endblock %}
+                    </form>
+
+                    {{ carousel_caption(1, 'Next') }}
+                </div>
+
+                <div class="item">
+                    <h2 class="text-center">Personal Health Information Sharing</h2>
+
+                    <div class="well">
+                        <p><time data-format="MMMM D, YYYY [at] h:mma" datetime="{{ today }}"></time></p>
+
+                        {% block confirm_item %}{% endblock %}
+                    </div>
+
+                    <div class="pull-right">
+                        <button type="button" class="btn btn-link" data-toggle="print">
+                            <span class="glyphicon glyphicon-print"></span>
+                            Print
+                        </button>
+                    </div>
+                    <div class="checkbox">
+                        <label class="text-muted">
+                            <input type="checkbox" disabled checked>
+                            Email me a copy of my approval
+                        </label>
+                    </div>
+
+                    <div class="carousel-caption">
+                        <div class="pull-left">
+                            <a data-target="#consent-carousel" data-slide-to="1" class="btn btn-primary">Back</a>
+                        </div>
+                        <form action="/oauth/authorize" method="post" class="pull-right">
+                            <a href="{{ abort_uri | e }}" class="btn btn-default">Do not approve</a>
+                            <input type="hidden" name="expires" value="{{ expires }}" />
+                            <input type="hidden" name="security_labels" value="{{ client.security_labels | join(' ') | e }}" />
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                            <input type="hidden" name="client_id" value="{{ data.client_id | e }}" />
+                            <input type="hidden" name="scope" value="{{ data.scopes | join(' ') | e }}" />
+                            <input type="hidden" name="response_type" value="{{ data.response_type | e }}" />
+                            <input type="hidden" name="redirect_uri" value="{{ data.redirect_uri | e }}" />
+                            <input type="hidden" name="patient_id" value="{{ patient.patient_id }}" />
+                            {% if data.state %}
+                            <input type="hidden" name="state" value="{{ data.state | e}}" />
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary" id="authorize">Approve</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block css %}
+{{ super() }}
+<style type="text/css">
+    @media print {
+        #consent-carousel [data-toggle="print"],
+        #consent-carousel .carousel-caption {
+            display: none;
+        }
+        #consent-carousel .well {
+            height: inherit !important;
+        }
+    }
+    #consent-carousel .item {
+        height: 600px;
+        padding: 20px 0 0;
+    }
+    #consent-carousel .item > :first-child {
+        margin-top: 0;
+    }
+    #consent-carousel h1 {
+        margin-bottom: 1em;
+    }
+    #consent-carousel form {
+        margin-bottom: 0;
+    }
+    #consent-carousel form .form-group {
+        margin-bottom: 0;
+    }
+    #consent-carousel form hr {
+        margin-top: 7px;
+        margin-bottom: 7px;
+    }
+    #consent-carousel .carousel-caption {
+        right: 10%;
+        left: 10%;
+    }
+    #consent-carousel .well {
+        height: 400px;
+        overflow: auto;
+        background: #F4EDD7;
+    }
+    #confirmation-item li.checkbox {
+        min-height: inherit;
+        padding-top: 0;
+    }
+    input[type="checkbox"].glyphbox {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        outline: none;
+        line-height: 0;
+    }
+    input[type="checkbox"].glyphbox:before {
+        font-family: 'Glyphicons Halflings';
+        font-size: 18px;
+        content: "\e157";
+    }
+    input[type="checkbox"][disabled].glyphbox:before {
+        color: #CCC;
+    }
+    input[type="checkbox"].glyphbox:checked:before {
+        content: "\e067";
+    }
+    input[type="checkbox"].glyphbox:active:before {
+        opacity: .8;
+    }
+    [data-toggle="popover"] {
+        color: #337ab7;
+        cursor: pointer;
+    }
+    [data-toggle="print"] {
+        position: relative;
+        top: -6px;
+        z-index: 1000;
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+<script src="/static/authorize.js"></script>
+{% endblock %}

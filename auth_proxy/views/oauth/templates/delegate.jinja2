@@ -1,0 +1,42 @@
+{% extends "base.jinja2" %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-center">Who are you representing?</h2>
+
+        <div class="row">
+            <div class="col-md-4 col-md-offset-4">
+                <div id="patients" class="list-group">
+                    {% for patient in current_user.patients %}
+                    <button type="button" class="list-group-item" data-patient-id="{{ patient.patient_id }}">
+                        {{ patient.name }}
+                        {% if patient.is_user %}(Yourself){% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+{{ super() }}
+{% raw %}
+<script>
+    $(function () {
+        $('#patients').on('click', 'button', function (event) {
+            event.preventDefault();
+            var $el = $(event.currentTarget);
+
+            window.location.href = [
+                window.location.href,
+                '&patient_id=',
+                encodeURIComponent($el.data('patient-id'))
+            ].join('');
+        });
+    });
+</script>
+{% endraw %}
+{% endblock %}

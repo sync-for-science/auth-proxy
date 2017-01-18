@@ -3,28 +3,6 @@ $(function () {
     var $boxes = $('#confirmation-item [rel="confirm"]');
     var $all = $boxes.add($next);
 
-    $('#patients').on('click', 'button', function (event) {
-        var $el = $(event.currentTarget);
-
-        // Prevent button behavior
-        event.preventDefault();
-
-        // Update patient selection
-        $('[name="patient_id"]').val($el.data('patient-id'));
-        $('[rel="patient-name"]').text($el.data('patient-name'));
-
-        // Advance the carousel
-        $('#consent-carousel').carousel('next');
-    });
-
-    // Show the right first page
-    if ($('#patients button').length > 1) {
-        $('#select-patient-item').addClass('active');
-    } else {
-        $('#patients button').trigger('click');
-        $('#intro-item').addClass('active');
-    }
-
     $boxes.on('change', function (event) {
         var $el = $(event.currentTarget);
         var index = $all.index($el) + 1 + Number($el.is(':checked'));

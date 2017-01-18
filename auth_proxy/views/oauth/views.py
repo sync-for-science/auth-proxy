@@ -54,35 +54,54 @@ def cb_oauth_token(*args, **kwargs):
 @oauthlib.authorize_handler
 @login_required
 def cb_oauth_authorize(*args, **kwargs):
-    if request.method == 'GET':
-        # Additional SMART checks not required by OAuth spec
-        assert 'redirect_uri' in request.args, 'Missing redirect_uri.'
-        assert 'scope' in request.args, 'Missing scope.'
-        assert 'state' in request.args, 'Missing state.'
+    if request.method == 'POST':
+        csrf.protect()
 
-        client = oauth_service.show_authorize_prompt(kwargs['client_id'])
+        oauth_service.create_authorization(
+            client_id=request.form['client_id'],
+            expires=request.form['expires'],
+            security_labels=request.form['security_labels'],
+            user=current_user,
+            patient_id=request.form['patient_id'],
+        )
 
-        abort_uri = furl(kwargs['redirect_uri'])
-        abort_uri.args['error'] = 'access_denied'
+        return True
 
-        today = arrow.utcnow().isoformat()
-        expires = arrow.utcnow().shift(years=1).format('YYYY-MM-DD')
+    # Additional SMART checks not required by OAuth spec
+    assert 'redirect_uri' in request.args, 'Missing redirect_uri.'
+    assert 'scope' in request.args, 'Missing scope.'
+    assert 'state' in request.args, 'Missing state.'
 
-        return render_template('authorize.jinja2',
-                               client=client,
-                               data=kwargs,
-                               today=today,
-                               expires=expires,
-                               abort_uri=abort_uri.url)
+    # Get the patient_id from GET query or use a default patient id
+    patient_id = request.args.get('patient_id',
+                                  current_user.default_patient_id)
 
-    csrf.protect()
+    # If we still don't have a patient id, show the delegation prompt
+    if not patient_id:
+        return render_template('delegate.jinja2')
 
-    oauth_service.create_authorization(
-        client_id=request.form['client_id'],
-        expires=request.form['expires'],
-        security_labels=request.form['security_labels'],
-        user=current_user,
-        patient_id=request.form['patient_id'],
-    )
+    # Make sure that this User can approve on behalf of this Patient
+    patient = current_user.patient(patient_id)
+    assert patient, 'Invalid patient id.'
 
-    return True
+    client = oauth_service.show_authorize_prompt(kwargs['client_id'])
+
+    abort_uri = furl(kwargs['redirect_uri'])
+    abort_uri.args['error'] = 'access_denied'
+
+    today = arrow.utcnow().isoformat()
+    expires = arrow.utcnow().shift(years=1).format('YYYY-MM-DD')
+
+    # Show a different template for delegation workflow
+    if patient.is_user:
+        template = 'authorize_self.jinja2'
+    else:
+        template = 'authorize_other.jinja2'
+
+    return render_template(template,
+                           patient=patient,
+                           client=client,
+                           data=kwargs,
+                           today=today,
+                           expires=expires,
+                           abort_uri=abort_uri.url)
