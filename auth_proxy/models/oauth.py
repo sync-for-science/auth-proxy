@@ -114,6 +114,9 @@ class Token(db.Model):
     _scopes = Column('scopes', Text)
     _security_labels = Column('security_labels', Text)
 
+    # FHIR Patient id
+    patient_id = Column(String)
+
     def refresh(self, access_token, refresh_token, expires_in, token_type, scope, **kwargs):
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
 

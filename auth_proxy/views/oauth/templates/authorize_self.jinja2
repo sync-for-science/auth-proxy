@@ -1,0 +1,50 @@
+{% extends "authorize_base.jinja2" %}
+
+{% block intro_item %}
+    <p>
+        You have signed into the 
+        <strong>{{ config.API_SERVER_NAME }}</strong>
+        patient portal to approve sharing your personally identifiable health information (including Protected Health Information as understood under the HIPAA law)
+        <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span>
+        maintained at <strong>{{ config.API_SERVER_NAME }}</strong>
+        with a third party, the
+        <strong>{{ client.name }}</strong>
+        via their research application.
+    </p>
+
+    <p>You will first be asked to confirm:</p>
+
+    <ul>
+        <li>the person whose personally identifiable health information would be shared (<strong>{{ patient.name }}</strong>)</li>
+        <li>the organization that maintains the information (<strong>{{ config.API_SERVER_NAME }}</strong>)</li>
+        <li>the third party that would receive the information (<strong>{{ client.name }}</strong>)</li>
+        <li>for how long any new information would be shared</li>
+        <li>the type of information that would be shared</li>
+    </ul>
+
+    <p>You will then have the opportunity to review what you confirmed before you would approve sharing your personally identifiable health information.</p>
+
+    <p>Once you approve sharing your personally identifiable health information, you, not <strong>{{ config.API_SERVER_NAME }}</strong>, will be responsible for any risks resulting from sharing this information with the <strong>{{ client.name }}</strong>.</p>
+
+    <p>Whether you choose to share or not to share your personally identifiable health information with the <strong>{{ client.name }}</strong> will have no effect on the medical care, benefits, or services that you will receive from <strong>{{ config.API_SERVER_NAME }}</strong>.</p>
+{% endblock %}
+
+{% block confirm_item %}
+    <p>I, {{ patient.name }}, approve {{ config.API_SERVER_NAME }} to share my personally identifiable health information (including Protected Health Information as understood under the HIPAA law) with the {{ client.name }} via their research application.</p>
+
+    <p>My approval to share my personally identifiable health information with the {{ client.name }} applies to ALL past dates of service, as well as all future dates of service, at {{ config.API_SERVER_NAME }} until <time id="approve-expires" data-format="MMMM D, YYYY" datetime="{{ expires }}"></time>, for the following personally identifiable health Information</p>
+
+    <ul id="approve-security-labels">
+        {% for label in client.security_labels %}
+            {% if label == "vital-signs" %}
+                <li>vital signs</li>
+            {% else %}
+                <li>{{ label }}</li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+
+    <p>By approving sharing my personally identifiable health information with the {{ client.name }}, I understand that I, not {{ config.API_SERVER_NAME }}, will be responsible for any risks resulting from sharing this information with the {{ client.name }}.</p>
+
+    <p>I understand that whether I choose to share or not to share my personally identifiable health information with the {{ client.name }} will have no effect on the medical care, benefits, or services that I will receive from {{ config.API_SERVER_NAME }}.</p>
+{% endblock %}

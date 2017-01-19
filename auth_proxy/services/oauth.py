@@ -93,22 +93,19 @@ class OAuthService(object):
         if grant_type == 'authorization_code':
             grant = self.db.session.query(Grant).\
                 filter_by(code=code).first()
-            user = getattr(grant, 'user', None)
+            token = self.db.session.query(Token).\
+                filter_by(client=grant.client).\
+                filter_by(user=grant.user).\
+                first()
         elif grant_type == 'refresh_token':
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
-            user = getattr(token, 'user', None)
-        else:
-            user = None
-
-        if user is None:
-            return None
 
         return {
-            'patient': user.patient_id,
+            'patient': token.patient_id,
         }
 
-    def create_authorization(self, client_id, expires, security_labels, user):
+    def create_authorization(self, client_id, expires, security_labels, user, patient_id):
         """ Creates the initial authorization token.
         """
         old = self.db.session.query(Token).\
@@ -122,6 +119,7 @@ class OAuthService(object):
             user=user,
             approval_expires=arrow.get(expires).datetime,
             _security_labels=security_labels,
+            patient_id=patient_id,
         )
         self.db.session.add(token)
         self.db.session.commit()
