@@ -125,6 +125,7 @@ class Token(db.Model):
             user=self.user,
             approval_expires=self.approval_expires,
             _security_labels=self._security_labels,
+            patient_id=self.patient_id,
             token_type=token_type,
             access_token=access_token,
             refresh_token=refresh_token,
