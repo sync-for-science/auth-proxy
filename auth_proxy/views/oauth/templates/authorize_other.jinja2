@@ -8,8 +8,8 @@
         <strong>{{ config.API_SERVER_NAME }}</strong>
         patient portal to instruct
         <strong>{{ config.API_SERVER_NAME }}</strong>
-        to electronically share the personally identifiable health information (including Protected Health Information as understood under the HIPAA law)
-        <span class="glyphicon glyphicon-question-sign" data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body"></span>
+        to electronically share the personally identifiable health information (including Protected Health Information as understood under the
+        <a data-content="{{ what_is_hipaa() | e }}" data-toggle="popover" data-html="true" data-container="body">HIPAA law</a>)
         of <strong>{{ patient.name }}</strong>
         with the <strong>{{ client.name }}</strong>,
         via their research application.

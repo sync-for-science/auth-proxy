@@ -92,7 +92,7 @@ class FlaskClient(Client):
         """ Determine which Patients the client should be allowed to see.
         """
         try:
-            patient = self.orig.oauth.user.patient_id
+            patient = self.orig.oauth.access_token.patient_id
             return 'Patient/{}'.format(patient)
         except AttributeError:
             return 'public'
