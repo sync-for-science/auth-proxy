@@ -101,6 +101,9 @@ class OAuthService(object):
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
 
+        if not token:
+            return False
+
         return {
             'patient': token.patient_id,
         }
