@@ -145,8 +145,7 @@ class OAuthService(object):
         """ OAuth2Provider Grant setter.
         """
         expires = datetime.utcnow() + timedelta(seconds=100)
-        user = self.db.session.query(User).\
-            filter_by(id=1).first()
+        user = flask_login.current_user
 
         assert user is not None
 
