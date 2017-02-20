@@ -100,6 +100,8 @@ class OAuthService(object):
         elif grant_type == 'refresh_token':
             token = self.db.session.query(Token).\
                 filter_by(refresh_token=refresh_token).first()
+        else:
+            return False
 
         if not token:
             return False
