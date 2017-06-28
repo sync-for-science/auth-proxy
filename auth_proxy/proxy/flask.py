@@ -86,7 +86,10 @@ class FlaskClient(Client):
         """ Determine which categories the client should be allowed to see
         based on their approved scopes.
         """
-        return ','.join(['public'] + self.orig.oauth.access_token.security_labels)
+        try:
+            return ','.join(['public'] + self.orig.oauth.access_token.security_labels)
+        except AttributeError:
+            return 'public'
 
     def _patient_security(self):
         """ Determine which Patients the client should be allowed to see.
