@@ -33,12 +33,25 @@ def api_me():
 
 @BP.route('/fhir/metadata')
 def api_fhir_metadata():
+
     url = current_app.config['API_SERVER'] + '/metadata'
+    authorize_url = url_for('oauth.cb_oauth_authorize', _external=True)
+    manage_url = url_for('main.apps', _external=True)
+
+    base_url = current_app.config['BASE_URL']
+    if base_url:
+        authorize_url =  base_url + '/oauth/authorize'
+        manage_url =  base_url + '/apps'
+
     extensions = {
-        'authorize': url_for('oauth.cb_oauth_authorize', _external=True),
+        # The first two URLs need to work from a browser, so we canonicalize
+        # them using BASE_URL if available (Flask SERVER_NAME has unexpected
+        # consequences making it unsuitable -- see
+        # https://github.com/pallets/flask/issues/998)
+        'authorize': authorize_url,
+        'manage': manage_url,
         'token': url_for('oauth.cb_oauth_token', _external=True),
         'register': url_for('oauth.oauth_register', _external=True),
-        'manage': url_for('main.apps', _external=True),
     }
 
     conformance = proxy_service.conformance(url, extensions)
