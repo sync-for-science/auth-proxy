@@ -8,8 +8,10 @@ from auth_proxy.proxy.requests import RequestsServer
 
 
 class ProxyService(object):
-    """ Handle proxying the FHIR API.
-    """
+    """ Handle proxying the FHIR API."""
+    def __init__(self):
+        self.default_client_factory = FlaskClient
+
     def conformance(self, url, extensions=None):
         """ Proxy the conformance statement.
         We need to set the oAuth uris extension though.
@@ -40,10 +42,11 @@ class ProxyService(object):
 
         return conformance
 
-    def api(self, url, request):
+    def api(self, url, request, client_factory=None):
         """ Proxy FHIR API requests.
         """
-        client = FlaskClient(url, request)
+        client_factory = client_factory or self.default_client_factory
+        client = client_factory(url, request)
         server = RequestsServer()
         proxy = Proxy(client, server)
 

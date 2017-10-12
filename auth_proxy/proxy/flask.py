@@ -55,11 +55,10 @@ class FlaskClient(Client):
             args.append(('_security', self._patient_security()))
 
         # Determine the URL to proxy to
-        url = self.url + '?' + parse.urlencode(args)
+        url = self._create_url(args)
 
         # Strip out headers that might confuse things
-        headers = {key: val for (key, val) in self.orig.headers.items()
-                   if key in self.allowed_headers}
+        headers = self._strip_disallowed_headers()
 
         return {
             'headers': headers,
@@ -67,6 +66,13 @@ class FlaskClient(Client):
             'url': url,
             'body': self.orig.data,
         }
+
+    def _create_url(self, args):
+        return self.url + '?' + parse.urlencode(args)
+
+    def _strip_disallowed_headers(self):
+        return {key: val for (key, val) in self.orig.headers.items()
+                   if key in self.allowed_headers}
 
     def check_request(self):
         """ @inherit
@@ -99,3 +105,32 @@ class FlaskClient(Client):
             return 'Patient/{}'.format(patient)
         except AttributeError:
             return 'public'
+
+
+class OpenFlaskClient(FlaskClient):
+    """Subclass of FlaskClient, overridden to prevent any security checks """
+    def __init__(self, url, orig):
+        super().__init__(url, orig)
+
+    def request(self):
+        """
+        Creates URL and Headers of redirected request.
+        :return: dict of request contents
+        """
+
+        url = self._create_url(list(self.orig.args.items()))
+        headers = self._strip_disallowed_headers()
+
+        return {
+            'headers': headers,
+            'method': self.orig.method,
+            'url': url,
+            'body': self.orig.data,
+        }
+
+    def check_request(self):
+        """
+        Override the base check_request to ignore all security requirements on this request.
+        :return: 
+        """
+        pass
