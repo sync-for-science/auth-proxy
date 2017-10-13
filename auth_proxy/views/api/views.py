@@ -15,7 +15,7 @@ from auth_proxy.extensions import oauthlib
 from auth_proxy.proxy import ForbiddenError
 from auth_proxy.services import oauth_service, proxy_service
 
-from auth_proxy.proxy.flask import OpenFlaskClient
+from auth_proxy.proxy.flask import UnsecureFlaskClient
 
 BP = Blueprint('api',
                __name__,
@@ -73,9 +73,9 @@ def api_fhir_proxy(path):
 
 @BP.route('/open-fhir/<path:path>', methods=['GET', 'POST'])
 def api_open_fhir_proxy(path):
-    if current_app.config['ENABLE_OPEN_FHIR']:
+    if current_app.config['ENABLE_UNSECURE_FHIR']:
         url = current_app.config['API_SERVER'] + '/' + path
-        response = proxy_service.api(url, request, OpenFlaskClient)
+        response = proxy_service.api(url, request, UnsecureFlaskClient)
 
         return Response(**response)
     else:

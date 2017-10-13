@@ -36,6 +36,8 @@ class FlaskClient(Client):
         'Procedure',
     ]
 
+    SECURITY_ARG_NAME = '_security'
+
     def __init__(self, url, orig):
         self.url = url
         self.orig = orig
@@ -43,19 +45,20 @@ class FlaskClient(Client):
     def request(self):
         """ @inherit
         """
-        args = list(self.orig.args.items())
+        original_args = list(self.orig.args.items())
 
         # We don't care what the client thinks it should be able to see
-        args = [arg for arg in args if arg[0] != '_security']
+        stripped_args = self._strip_security_args(original_args)
 
         # Update the query params
         path = self.orig.view_args.get('path').split('/')
+
         if len(path) == 1:
-            args.append(('_security', self._scope_security()))
-            args.append(('_security', self._patient_security()))
+            self._scope_security(stripped_args)
+            self._patient_security(stripped_args)
 
         # Determine the URL to proxy to
-        url = self._create_url(args)
+        url = self._create_url(stripped_args)
 
         # Strip out headers that might confuse things
         headers = self._strip_disallowed_headers()
@@ -66,6 +69,9 @@ class FlaskClient(Client):
             'url': url,
             'body': self.orig.data,
         }
+
+    def _strip_security_args(self, args):
+        return [arg for arg in args if arg[0] != self.SECURITY_ARG_NAME]
 
     def _create_url(self, args):
         return self.url + '?' + parse.urlencode(args)
@@ -88,49 +94,42 @@ class FlaskClient(Client):
         if path not in self.allowed_resources:
             raise ForbiddenError(segment=path)
 
-    def _scope_security(self):
+    def _scope_security(self, args):
         """ Determine which categories the client should be allowed to see
         based on their approved scopes.
         """
         try:
-            return ','.join(['public'] + self.orig.oauth.access_token.security_labels)
+            labels = ','.join(['public'] + self.orig.oauth.access_token.security_labels)
         except AttributeError:
-            return 'public'
+            labels = 'public'
 
-    def _patient_security(self):
+        args.append((self.SECURITY_ARG_NAME, labels))
+
+    def _patient_security(self, args):
         """ Determine which Patients the client should be allowed to see.
         """
         try:
             patient = self.orig.oauth.access_token.patient_id
-            return 'Patient/{}'.format(patient)
+            labels = 'Patient/{}'.format(patient)
         except AttributeError:
-            return 'public'
+            labels = 'public'
+
+        args.append((self.SECURITY_ARG_NAME, labels))
 
 
-class OpenFlaskClient(FlaskClient):
+class UnsecureFlaskClient(FlaskClient):
     """Subclass of FlaskClient, overridden to prevent any security checks """
-    def __init__(self, url, orig):
-        super().__init__(url, orig)
 
-    def request(self):
-        """
-        Creates URL and Headers of redirected request.
-        :return: dict of request contents
-        """
+    # Preserve original security arguments of the request
+    def _strip_security_args(self, args):
+        return args
 
-        url = self._create_url(list(self.orig.args.items()))
-        headers = self._strip_disallowed_headers()
+    # All the following methods are overridden with a 'pass' to prevent security from being applied to the request.
+    def _patient_security(self, args):
+        pass
 
-        return {
-            'headers': headers,
-            'method': self.orig.method,
-            'url': url,
-            'body': self.orig.data,
-        }
+    def _scope_security(self, args):
+        pass
 
     def check_request(self):
-        """
-        Override the base check_request to ignore all security requirements on this request.
-        :return: 
-        """
         pass
