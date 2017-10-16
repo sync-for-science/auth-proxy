@@ -45,40 +45,44 @@ class FlaskClient(Client):
     def request(self):
         """ @inherit
         """
-        original_args = list(self.orig.args.items())
 
-        # We don't care what the client thinks it should be able to see
-        stripped_args = self._strip_security_args(original_args)
-
-        # Update the query params
-        path = self.orig.view_args.get('path').split('/')
-
-        if len(path) == 1:
-            self._scope_security(stripped_args)
-            self._patient_security(stripped_args)
-
-        # Determine the URL to proxy to
-        url = self._create_url(stripped_args)
-
-        # Strip out headers that might confuse things
-        headers = self._strip_disallowed_headers()
+        stripped_args, stripped_headers = self._get_secured_args_and_headers()
 
         return {
-            'headers': headers,
+            'headers': stripped_headers,
             'method': self.orig.method,
-            'url': url,
+            'url': self._create_url(stripped_args),
             'body': self.orig.data,
         }
 
-    def _strip_security_args(self, args):
-        return [arg for arg in args if arg[0] != self.SECURITY_ARG_NAME]
+    def _get_secured_args_and_headers(self):
+        """
+        Enforce security on the request by removing existing security parameters and 
+        adding our own based on scope/patient authorizations. Also remove headers 
+        not in the allowed list.
+        :return: list, dict : The modified request arguments and headers.
+        """
+
+        original_args = list(self.orig.args.items())
+
+        # Strip existing security arguments so we can apply our own.
+        stripped_args = [arg for arg in original_args if arg[0] != self.SECURITY_ARG_NAME]
+
+        # Add security based on the requested path.
+        path = self.orig.view_args.get('path').split('/')
+
+        if len(path) == 1:
+            stripped_args.append((self.SECURITY_ARG_NAME, self._get_scope_security_label()))
+            stripped_args.append((self.SECURITY_ARG_NAME, self._get_patient_security_label()))
+
+        # Remove headers based on a list of allowed ones.
+        stripped_headers = {key: val for (key, val) in self.orig.headers.items()
+                            if key in self.allowed_headers}
+
+        return stripped_args, stripped_headers
 
     def _create_url(self, args):
         return self.url + '?' + parse.urlencode(args)
-
-    def _strip_disallowed_headers(self):
-        return {key: val for (key, val) in self.orig.headers.items()
-                   if key in self.allowed_headers}
 
     def check_request(self):
         """ @inherit
@@ -91,10 +95,11 @@ class FlaskClient(Client):
             raise ForbiddenError(method=self.orig.method)
 
         path = self.orig.view_args.get('path').split('/')[0]
+
         if path not in self.allowed_resources:
             raise ForbiddenError(segment=path)
 
-    def _scope_security(self, args):
+    def _get_scope_security_label(self):
         """ Determine which categories the client should be allowed to see
         based on their approved scopes.
         """
@@ -102,10 +107,9 @@ class FlaskClient(Client):
             labels = ','.join(['public'] + self.orig.oauth.access_token.security_labels)
         except AttributeError:
             labels = 'public'
+        return labels
 
-        args.append((self.SECURITY_ARG_NAME, labels))
-
-    def _patient_security(self, args):
+    def _get_patient_security_label(self):
         """ Determine which Patients the client should be allowed to see.
         """
         try:
@@ -113,23 +117,21 @@ class FlaskClient(Client):
             labels = 'Patient/{}'.format(patient)
         except AttributeError:
             labels = 'public'
-
-        args.append((self.SECURITY_ARG_NAME, labels))
+        return labels
 
 
 class UnsecureFlaskClient(FlaskClient):
     """Subclass of FlaskClient, overridden to prevent any security checks """
 
-    # Preserve original security arguments of the request
-    def _strip_security_args(self, args):
-        return args
+    def request(self):
+        """
+        Ignore all security checks and pass the request through.
+        :return: 
+        """
 
-    # All the following methods are overridden with a 'pass' to prevent security from being applied to the request.
-    def _patient_security(self, args):
-        pass
-
-    def _scope_security(self, args):
-        pass
-
-    def check_request(self):
-        pass
+        return {
+            'headers': {key: val for (key, val) in self.orig.headers.items()},
+            'method': self.orig.method,
+            'url': self._create_url(list(self.orig.args.items())),
+            'body': self.orig.data,
+        }
