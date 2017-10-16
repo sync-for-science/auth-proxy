@@ -16,6 +16,7 @@ app.config['WTF_CSRF_CHECK_DEFAULT'] = False
 
 app.config['API_SERVER'] = os.getenv('API_SERVER')
 app.config['API_SERVER_NAME'] = os.getenv('API_SERVER_NAME')
+app.config['ENABLE_UNSECURE_FHIR'] = os.getenv('ENABLE_UNSECURE_FHIR') == 'True'
 
 app.config['BASE_URL'] = os.getenv('BASE_URL', None)
 
