@@ -46,43 +46,35 @@ class FlaskClient(Client):
         """ @inherit
         """
 
-        stripped_args, stripped_headers = self._get_secured_args_and_headers()
+        args = list(self.orig.args.items())
 
-        return {
-            'headers': stripped_headers,
-            'method': self.orig.method,
-            'url': self._create_url(stripped_args),
-            'body': self.orig.data,
-        }
-
-    def _get_secured_args_and_headers(self):
-        """
-        Enforce security on the request by removing existing security parameters and 
-        adding our own based on scope/patient authorizations. Also remove headers 
-        not in the allowed list.
-        :return: list, dict : The modified request arguments and headers.
-        """
-
-        original_args = list(self.orig.args.items())
-
-        # Strip existing security arguments so we can apply our own.
-        stripped_args = [arg for arg in original_args if arg[0] != self.SECURITY_ARG_NAME]
-
-        # Add security based on the requested path.
         path = self.orig.view_args.get('path').split('/')
 
         if len(path) == 1:
-            stripped_args.append((self.SECURITY_ARG_NAME, self._get_scope_security_label()))
-            stripped_args.append((self.SECURITY_ARG_NAME, self._get_patient_security_label()))
+            args = self._get_secure_args(args)
 
-        # Remove headers based on a list of allowed ones.
-        stripped_headers = {key: val for (key, val) in self.orig.headers.items()
+        headers = {key: val for (key, val) in self.orig.headers.items()
                             if key in self.allowed_headers}
 
-        return stripped_args, stripped_headers
+        return {
+            'headers': headers,
+            'method': self.orig.method,
+            'url': self.url + '?' + parse.urlencode(args),
+            'body': self.orig.data,
+        }
 
-    def _create_url(self, args):
-        return self.url + '?' + parse.urlencode(args)
+    def _get_secure_args(self, original_args):
+        """
+        Strip existing security arguments and apply our own.
+        :param original_args: 
+        :return: list: new request arguments with injected security
+        """
+        stripped_args = [arg for arg in original_args if arg[0] != self.SECURITY_ARG_NAME]
+
+        stripped_args.append((self.SECURITY_ARG_NAME, self._get_scope_security_label()))
+        stripped_args.append((self.SECURITY_ARG_NAME, self._get_patient_security_label()))
+
+        return stripped_args
 
     def check_request(self):
         """ @inherit
@@ -123,15 +115,5 @@ class FlaskClient(Client):
 class UnsecureFlaskClient(FlaskClient):
     """Subclass of FlaskClient, overridden to prevent any security checks """
 
-    def request(self):
-        """
-        Ignore all security checks and pass the request through.
-        :return: 
-        """
-
-        return {
-            'headers': {key: val for (key, val) in self.orig.headers.items()},
-            'method': self.orig.method,
-            'url': self._create_url(list(self.orig.args.items())),
-            'body': self.orig.data,
-        }
+    def _get_secure_args(self, original_args):
+        return original_args
