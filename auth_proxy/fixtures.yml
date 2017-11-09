@@ -41,7 +41,7 @@ args:
   name: S4S Test Suite
   _redirect_uris: http://tests.dev.syncfor.science:9003/authorized/
   _default_scopes: launch/patient patient/*.read offline_access
-  _security_labels: patient medications allergies immunizations problems procedures vital-signs laboratory smoking
+  _security_labels: coverage explanation-of-benefit patient medications allergy immunizations problems procedures vital-signs laboratory smoking
 ---
 class: !!python/name:auth_proxy.models.oauth.Client
 args:
@@ -50,4 +50,4 @@ args:
   name: All of Us Research Program
   _redirect_uris: http://dev.syncfor.science:9001/authorized http://s4s.tomwschneider.com/authorized http://localhost:9001/authorized
   _default_scopes: launch/patient patient/*.read offline_access
-  _security_labels: patient medications allergies immunizations problems procedures vital-signs laboratory smoking
+  _security_labels: patient medications allergy immunizations problems procedures vital-signs laboratory smoking
