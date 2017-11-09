@@ -31,6 +31,7 @@ class FlaskClient(Client):
         'Immunization',
         'MedicationAdministration',
         'MedicationDispense',
+        'MedicationOrder',
         'MedicationStatement',
         'MedicationRequest',
         'Observation',
