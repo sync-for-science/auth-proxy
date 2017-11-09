@@ -16,6 +16,7 @@ class FlaskClient(Client):
         'category',
         'patient',
         '_security',
+        'beneficiary'
     ]
     allowed_methods = ['GET']
     allowed_resources = [
@@ -23,13 +24,15 @@ class FlaskClient(Client):
         'AllergyIntolerance',
         'Binary',
         'Condition',
+        'Coverage',
         'DocumentReference',
         'Encounter',
+        'ExplanationOfBenefit',
         'Immunization',
         'MedicationAdministration',
         'MedicationDispense',
-        'MedicationOrder',
         'MedicationStatement',
+        'MedicationRequest',
         'Observation',
         'Patient',
         'Practitioner',
