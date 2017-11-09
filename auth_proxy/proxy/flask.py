@@ -28,6 +28,7 @@ class FlaskClient(Client):
         'DocumentReference',
         'Encounter',
         'ExplanationOfBenefit',
+        'ImagingStudy',
         'Immunization',
         'MedicationAdministration',
         'MedicationDispense',
