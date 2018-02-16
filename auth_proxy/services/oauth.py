@@ -32,7 +32,7 @@ class OAuthService(object):
         client = Client(
             client_id=client_id,
             client_secret=client_secret,
-            client_name=client_name,
+            name=client_name,
             _redirect_uris=redirect_uris,
             _default_scopes=scopes,
             _security_labels=' '.join([
