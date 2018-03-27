@@ -6,13 +6,14 @@ from flask import (
     Blueprint,
     jsonify,
     render_template,
-    request,
+    request
 )
 from flask_login import current_user, login_required
 from furl import furl
 
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
+from auth_proxy.models.user import User
 
 BP = Blueprint('oauth',
                __name__,
@@ -48,6 +49,26 @@ def cb_oauth_token(*args, **kwargs):
     )
 
     return credentials
+
+
+@BP.route('/debug/token', methods=['POST'])
+def debug_create_token(*args, **kwargs):
+
+    token_json = request.get_json()
+
+    creating_user = User.query.filter_by(username=token_json["user"]).first()
+
+    token = oauth_service.create_token(
+        client_id=token_json["client_id"],
+        expires=token_json["expires"],
+        security_labels=token_json["security_labels"],
+        user=creating_user,
+        patient_id=token_json["patient_id"]
+    )
+
+    refreshed_token = token.refresh("access1234", "refresh1234", token_json["expires"], "Bearer", token_json["security_labels"])
+
+    return jsonify({"access_token": refreshed_token.access_token})
 
 
 @BP.route('/authorize', methods=['GET', 'POST'])
