@@ -110,18 +110,6 @@ class OAuthService(object):
             'patient': token.patient_id,
         }
 
-    def create_token(self, client_id, expires, security_labels, user, patient_id):
-
-        token = Token(
-            client_id=client_id,
-            user=user,
-            approval_expires=arrow.get(expires).datetime,
-            _security_labels=security_labels,
-            patient_id=patient_id,
-        )
-
-        return token
-
     def create_authorization(self, client_id, expires, security_labels, user, patient_id):
         """ Creates the initial authorization token.
         """
@@ -131,7 +119,13 @@ class OAuthService(object):
         for token in old:
             self.db.session.delete(token)
 
-        token = self.create_token(client_id, expires, security_labels, user, patient_id)
+        token = Token(
+            client_id=client_id,
+            user=user,
+            approval_expires=arrow.get(expires).datetime,
+            _security_labels=security_labels,
+            patient_id=patient_id,
+        )
 
         self.db.session.add(token)
         self.db.session.commit()

@@ -19,6 +19,7 @@ class AuthproxyTestCase(unittest.TestCase):
 
     def test_debug_token(self):
 
+        # Create Token
         client_id = "test1234"
         expires = 360
         security_labels = "patient,allergies"
@@ -34,8 +35,11 @@ class AuthproxyTestCase(unittest.TestCase):
         debug_token = self.app.post('/oauth/debug/token',
                                     data=json.dumps(test_token_input),
                                     content_type='application/json')
-        
+
         assert json.loads(debug_token.get_data(as_text=True))["access_token"]
+
+        # Attempt to verify Token
+
 
 
 if __name__ == '__main__':

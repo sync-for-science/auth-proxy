@@ -14,7 +14,7 @@ from furl import furl
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
 from auth_proxy.models.user import User
-
+from auth_proxy.models.oauth import Client, Grant, Token
 import random
 import string
 
@@ -61,10 +61,10 @@ def debug_create_token(*args, **kwargs):
 
     creating_user = User.query.filter_by(username=token_json["user"]).first()
 
-    token = oauth_service.create_token(
+    token = Token(
         client_id=token_json["client_id"],
-        expires=token_json["expires"],
-        security_labels=token_json["security_labels"],
+        approval_expires=arrow.get(token_json["expires"]).datetime,
+        _security_labels=token_json["security_labels"],
         user=creating_user,
         patient_id=token_json["patient_id"]
     )
