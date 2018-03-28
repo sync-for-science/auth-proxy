@@ -15,6 +15,9 @@ from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
 from auth_proxy.models.user import User
 
+import random
+import string
+
 BP = Blueprint('oauth',
                __name__,
                template_folder='templates',
@@ -66,9 +69,12 @@ def debug_create_token(*args, **kwargs):
         patient_id=token_json["patient_id"]
     )
 
-    refreshed_token = token.refresh("access1234", "refresh1234", token_json["expires"], "Bearer", token_json["security_labels"])
+    generated_access_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
+    generated_refresh_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
 
-    return jsonify({"access_token": refreshed_token.access_token})
+    refreshed_token = token.refresh(generated_access_token, generated_refresh_token, token_json["expires"], "Bearer", token_json["security_labels"])
+
+    return jsonify({"access_token": refreshed_token.access_token, "refresh_token": generated_refresh_token})
 
 
 @BP.route('/authorize', methods=['GET', 'POST'])
