@@ -14,9 +14,8 @@ from furl import furl
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
 from auth_proxy.models.user import User
-from auth_proxy.models.oauth import Client, Grant, Token
-import random
-import string
+from auth_proxy.models.oauth import Token
+
 
 BP = Blueprint('oauth',
                __name__,
@@ -59,22 +58,21 @@ def debug_create_token(*args, **kwargs):
 
     token_json = request.get_json()
 
-    creating_user = User.query.filter_by(username=token_json["user"]).first()
+    token = oauth_service.create_debug_token(client_id=token_json["client_id"],
+                                             approval_expires=token_json["expires"],
+                                             security_labels=token_json["security_labels"],
+                                             user=token_json["user"],
+                                             patient_id=token_json["patient_id"])
 
-    token = Token(
-        client_id=token_json["client_id"],
-        approval_expires=arrow.get(token_json["expires"]).datetime,
-        _security_labels=token_json["security_labels"],
-        user=creating_user,
-        patient_id=token_json["patient_id"]
-    )
+    return jsonify({"access_token": token.access_token, "refresh_token": token.refresh_token})
 
-    generated_access_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
-    generated_refresh_token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
 
-    refreshed_token = token.refresh(generated_access_token, generated_refresh_token, token_json["expires"], "Bearer", token_json["security_labels"])
+@BP.route('/debug/introspect', methods=['POST'])
+def debug_token_introspection(*args, **kwargs):
 
-    return jsonify({"access_token": refreshed_token.access_token, "refresh_token": generated_refresh_token})
+    passed_token = Token.query.filter_by(access_token=request.get_json()["access_token"]).first()
+
+    return jsonify(passed_token.interest)
 
 
 @BP.route('/authorize', methods=['GET', 'POST'])

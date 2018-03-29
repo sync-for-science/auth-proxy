@@ -1,46 +1,70 @@
-import os
-from auth_proxy.application import create_app
+from auth_proxy.application import app, create_app
+from auth_proxy.models.oauth import Client
+from auth_proxy.models.user import User
+from auth_proxy.extensions import db
 import unittest
-import tempfile
 import json
 
 
 class AuthproxyTestCase(unittest.TestCase):
 
+    CLIENT_ID = "test1234"
+    CLIENT_SECRET = "secret1234"
+
+    USERNAME = "daniel-adams"
+    PASSWORD = "demo-password"
+
     def setUp(self):
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         self.auth_app = create_app()
-        self.db_fd, self.auth_app.config['DATABASE'] = tempfile.mkstemp()
+
+        with self.auth_app.app_context():
+            db.create_all()
+            new_client = Client(client_id=self.CLIENT_ID,
+                                client_secret=self.CLIENT_SECRET,
+                                name=self.CLIENT_ID)
+
+            db.session.add(new_client)
+
+            new_user = User(username=self.USERNAME,
+                            password=self.PASSWORD)
+
+            db.session.add(new_user)
+
+            db.session.commit()
+
         self.auth_app.testing = True
         self.app = self.auth_app.test_client()
-
-    def tearDown(self):
-        os.close(self.db_fd)
-        os.unlink(self.auth_app.config['DATABASE'])
 
     def test_debug_token(self):
 
         # Create Token
-        client_id = "test1234"
         expires = 360
-        security_labels = "patient,allergies"
-        user = "daniel-adams"
+        security_labels = "patient allergies"
         patient_id = "smart-1288992"
 
-        test_token_input = {"client_id": client_id,
+        test_token_input = {"client_id": self.CLIENT_ID,
                             "expires": expires,
                             "security_labels": security_labels,
-                            "user": user,
+                            "user": self.USERNAME,
                             "patient_id": patient_id}
 
-        debug_token = self.app.post('/oauth/debug/token',
-                                    data=json.dumps(test_token_input),
-                                    content_type='application/json')
+        debug_token_return = self.app.post('/oauth/debug/token',
+                                           data=json.dumps(test_token_input),
+                                           content_type='application/json')
 
-        assert json.loads(debug_token.get_data(as_text=True))["access_token"]
+        # Did we receive the token succesfully?
+        access_token = json.loads(debug_token_return.get_data(as_text=True))["access_token"]
+        assert access_token
 
         # Attempt to verify Token
+        token_introspection_response = self.app.post('/oauth/debug/introspect',
+                                                     data=json.dumps({"access_token": access_token}),
+                                                     content_type='application/json')
 
-
+        # Did we receive the same token we sent?
+        returned_access_token = json.loads(token_introspection_response.get_data(as_text=True))["access_token"]
+        assert access_token == returned_access_token
 
 if __name__ == '__main__':
     unittest.main()

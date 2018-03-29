@@ -5,10 +5,11 @@ import uuid
 
 import arrow
 import flask_login
+import random
+import string
 
 from auth_proxy.models.oauth import Client, Grant, Token
 from auth_proxy.models.user import User
-
 
 class OAuthService(object):
     """ Handle all our oAuth operations.
@@ -196,6 +197,40 @@ class OAuthService(object):
         new = old.refresh(**token)
 
         self.db.session.delete(old)
+        self.db.session.add(new)
+        self.db.session.commit()
+
+        return new
+
+    def create_debug_token(self, client_id, approval_expires, security_labels, user, patient_id):
+
+        creating_user = User.query.filter_by(username=user).one()
+        client = Client.query.filter_by(client_id=client_id).one()
+
+        token = Token(
+            client_id=client_id,
+            client=client,
+            approval_expires=arrow.get(approval_expires).datetime,
+            _security_labels=security_labels,
+            user=creating_user,
+            patient_id=patient_id
+        )
+
+        self.db.session.add(token)
+        self.db.session.commit()
+
+        character_options = string.ascii_uppercase + string.digits
+
+        generated_access_token = ''.join(random.SystemRandom().choice(character_options) for _ in range(20))
+        generated_refresh_token = ''.join(random.SystemRandom().choice(character_options) for _ in range(20))
+
+        new = token.refresh(generated_access_token,
+                            generated_refresh_token,
+                            approval_expires,
+                            "Bearer",
+                            security_labels)
+
+        self.db.session.delete(token)
         self.db.session.add(new)
         self.db.session.commit()
 
