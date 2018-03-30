@@ -13,7 +13,6 @@ from furl import furl
 
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
-from auth_proxy.models.user import User
 from auth_proxy.models.oauth import Token
 
 
