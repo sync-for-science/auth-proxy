@@ -126,6 +126,7 @@ class OAuthService(object):
             _security_labels=security_labels,
             patient_id=patient_id,
         )
+
         self.db.session.add(token)
         self.db.session.commit()
 
@@ -195,6 +196,40 @@ class OAuthService(object):
         new = old.refresh(**token)
 
         self.db.session.delete(old)
+        self.db.session.add(new)
+        self.db.session.commit()
+
+        return new
+
+    def create_debug_token(self, client_id, approval_expires, scopes, user, patient_id):
+
+        creating_user = User.query.filter_by(username=user).one()
+        client = Client.query.filter_by(client_id=client_id).one()
+
+        token = Token(
+            client_id=client_id,
+            client=client,
+            approval_expires=arrow.get(approval_expires).datetime,
+            _scopes=scopes,
+            user=creating_user,
+            patient_id=patient_id
+        )
+
+        self.db.session.add(token)
+        self.db.session.commit()
+
+        generated_access_token = str(uuid.uuid4())
+        generated_refresh_token = str(uuid.uuid4())
+
+        # We want to keep the debug token generation as close to the real authorization process as possible.
+        # To that end we use the refresh method on the token object to set access/refresh tokens and expiry.
+        new = token.refresh(generated_access_token,
+                            generated_refresh_token,
+                            approval_expires,
+                            "Bearer",
+                            scopes)
+
+        self.db.session.delete(token)
         self.db.session.add(new)
         self.db.session.commit()
 
