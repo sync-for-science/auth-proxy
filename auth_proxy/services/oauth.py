@@ -222,6 +222,8 @@ class OAuthService(object):
         generated_access_token = str(uuid.uuid4())
         generated_refresh_token = str(uuid.uuid4())
 
+        # We want to keep the debug token as close to the real authorization process as possible.
+        # To that end we use the refresh method on the token object to set access/refresh tokens and expiry.
         new = token.refresh(generated_access_token,
                             generated_refresh_token,
                             approval_expires,
