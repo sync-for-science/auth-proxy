@@ -60,17 +60,16 @@ def debug_create_token(*args, **kwargs):
 
     token = oauth_service.create_debug_token(client_id=token_json["client_id"],
                                              approval_expires=token_json["expires"],
-                                             security_labels=token_json["security_labels"],
+                                             scopes=token_json["scopes"],
                                              user=token_json["user"],
                                              patient_id=token_json["patient_id"])
 
     return jsonify({"access_token": token.access_token, "refresh_token": token.refresh_token})
 
 
-@BP.route('/debug/introspect', methods=['POST'])
+@BP.route('/debug/introspect', methods=['GET'])
 def debug_token_introspection(*args, **kwargs):
-
-    passed_token = Token.query.filter_by(access_token=request.get_json()["access_token"]).first()
+    passed_token = Token.query.filter_by(access_token=request.args["access_token"]).first()
 
     return jsonify(passed_token.interest)
 

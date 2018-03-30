@@ -202,7 +202,7 @@ class OAuthService(object):
 
         return new
 
-    def create_debug_token(self, client_id, approval_expires, security_labels, user, patient_id):
+    def create_debug_token(self, client_id, approval_expires, scopes, user, patient_id):
 
         creating_user = User.query.filter_by(username=user).one()
         client = Client.query.filter_by(client_id=client_id).one()
@@ -211,7 +211,7 @@ class OAuthService(object):
             client_id=client_id,
             client=client,
             approval_expires=arrow.get(approval_expires).datetime,
-            _security_labels=security_labels,
+            _scopes=scopes,
             user=creating_user,
             patient_id=patient_id
         )
@@ -219,16 +219,14 @@ class OAuthService(object):
         self.db.session.add(token)
         self.db.session.commit()
 
-        character_options = string.ascii_uppercase + string.digits
-
-        generated_access_token = ''.join(random.SystemRandom().choice(character_options) for _ in range(20))
-        generated_refresh_token = ''.join(random.SystemRandom().choice(character_options) for _ in range(20))
+        generated_access_token = str(uuid.uuid4())
+        generated_refresh_token = str(uuid.uuid4())
 
         new = token.refresh(generated_access_token,
                             generated_refresh_token,
                             approval_expires,
                             "Bearer",
-                            security_labels)
+                            scopes)
 
         self.db.session.delete(token)
         self.db.session.add(new)

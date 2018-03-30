@@ -40,12 +40,12 @@ class AuthproxyTestCase(unittest.TestCase):
 
         # Create Token
         expires = 360
-        security_labels = "patient allergies"
+        scopes = "patient/*.read launch/patient offline_access"
         patient_id = "smart-1288992"
 
         test_token_input = {"client_id": self.CLIENT_ID,
                             "expires": expires,
-                            "security_labels": security_labels,
+                            "scopes": scopes,
                             "user": self.USERNAME,
                             "patient_id": patient_id}
 
@@ -58,9 +58,7 @@ class AuthproxyTestCase(unittest.TestCase):
         assert access_token
 
         # Attempt to verify Token
-        token_introspection_response = self.app.post('/oauth/debug/introspect',
-                                                     data=json.dumps({"access_token": access_token}),
-                                                     content_type='application/json')
+        token_introspection_response = self.app.get('/oauth/debug/introspect?access_token=%s' % access_token)
 
         # Did we receive the same token we sent?
         returned_access_token = json.loads(token_introspection_response.get_data(as_text=True))["access_token"]
