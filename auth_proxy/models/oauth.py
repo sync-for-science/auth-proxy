@@ -109,8 +109,8 @@ class Token(db.Model):
 
     access_token = Column(String, unique=True)
     refresh_token = Column(String, unique=True)
-    expires = Column(DateTime)
-    approval_expires = Column(DateTime)
+    expires = Column(DateTime)  # access token expiration time
+    approval_expires = Column(DateTime)  # refresh token expiration time
     _scopes = Column('scopes', Text)
     _security_labels = Column('security_labels', Text)
 

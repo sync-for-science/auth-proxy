@@ -1,6 +1,8 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+import time
+
 import arrow
 from flask import (
     Blueprint,
@@ -59,18 +61,38 @@ def debug_create_token(*args, **kwargs):
 
     token_json = request.get_json()
 
-    token = oauth_service.create_debug_token(client_id=token_json["client_id"],
-                                             approval_expires=token_json["expires"],
-                                             scopes=token_json["scopes"],
-                                             user=token_json["user"],
-                                             patient_id=token_json["patient_id"])
+    default_access_lifetime = 60*60  # 1 hour
+    default_approval_expiry = time.time() + 365*24*60*60  # 1 year from now
 
-    return jsonify({"access_token": token.access_token, "refresh_token": token.refresh_token})
+    token = oauth_service.create_debug_token(
+        client_id=token_json.get('client_id'),
+        access_lifetime=token_json.get('access_lifetime', default_access_lifetime),
+        approval_expires=token_json.get('approval_expires', default_approval_expiry),
+        scopes=token_json.get('scope'),
+        user=token_json.get('user_name'),
+        patient_id=token_json.get('patient_id')
+    )
+
+    return jsonify({'access_token': token.access_token, 'refresh_token': token.refresh_token})
 
 
 @BP.route('/debug/introspect', methods=['GET'])
 def debug_token_introspection(*args, **kwargs):
-    passed_token = Token.query.filter_by(access_token=request.args["access_token"]).first()
+    access_token = request.args.get('access_token')
+    refresh_token = request.args.get('refresh_token')
+
+    if access_token:
+        passed_token = Token.query.filter_by(access_token=access_token).first()
+    elif refresh_token:
+        passed_token = Token.query.filter_by(refresh_token=refresh_token).first()
+    else:
+        raise OAuthServiceError(
+            'no_token',
+            'Either "access_token" or "refresh_token" is required.'
+        )
+
+    if not passed_token:
+        raise OAuthServiceError('no_token', 'No matching token found.')
 
     return jsonify(passed_token.interest)
 

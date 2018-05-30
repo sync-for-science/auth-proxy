@@ -226,15 +226,72 @@ class OAuthService(object):
 
         return new
 
-    def create_debug_token(self, client_id, approval_expires, scopes, user, patient_id):
+    def create_debug_token(self, client_id, access_lifetime, approval_expires, scopes, user, patient_id):
 
-        creating_user = User.query.filter_by(username=user).one()
-        client = Client.query.filter_by(client_id=client_id).one()
+        if not user:
+            raise OAuthServiceError(
+                'no_user',
+                '"user_name" is required.'
+            )
+
+        creating_user = User.query.filter_by(username=user).first()
+        if not creating_user:
+            raise OAuthServiceError(
+                'no_user',
+                'Username "{}" not found'.format(user)
+            )
+
+        if not client_id:
+            raise OAuthServiceError(
+                'no_client',
+                '"client_id" is required.'
+            )
+
+        client = Client.query.filter_by(client_id=client_id).first()
+        if not client:
+            raise OAuthServiceError(
+                'no_client',
+                'Client ID "{}" not found.'.format(client_id)
+            )
+
+        if not patient_id:
+            raise OAuthServiceError(
+                'no_patient',
+                '"patient_id" is required.'
+            )
+
+        # ensure the patient belongs to the user
+        if not creating_user.patient(patient_id):
+            raise OAuthServiceError(
+                'no_patient_for_user',
+                'Patient ID "{}" does not belong to user "{}"'.format(patient_id, user)
+            )
+
+        try:
+            access_lifetime = int(access_lifetime)
+            if access_lifetime <= 0:
+                raise ValueError
+        except ValueError:
+            raise OAuthServiceError(
+                'malformed_lifetime',
+                'Access token lifetime should be a positive integer.'
+            )
+
+        try:
+            approval_expires = int(approval_expires)
+        except ValueError:
+            raise OAuthServiceError(
+                'malformed_expiration',
+                'Approval expiration time should be a Unix timestamp.'
+            )
+
+        if scopes is None:
+            scopes = ' '.join(client.default_scopes)
 
         token = Token(
             client_id=client_id,
             client=client,
-            approval_expires=arrow.get(approval_expires).datetime,
+            approval_expires=datetime.fromtimestamp(approval_expires),
             _scopes=scopes,
             user=creating_user,
             patient_id=patient_id
@@ -250,7 +307,7 @@ class OAuthService(object):
         # To that end we use the refresh method on the token object to set access/refresh tokens and expiry.
         new = token.refresh(generated_access_token,
                             generated_refresh_token,
-                            approval_expires,
+                            access_lifetime,
                             "Bearer",
                             scopes)
 
