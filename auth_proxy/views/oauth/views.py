@@ -14,6 +14,7 @@ from furl import furl
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
 from auth_proxy.models.oauth import Token
+from auth_proxy.services import OAuthServiceError
 
 
 BP = Blueprint('oauth',
@@ -25,14 +26,15 @@ BP = Blueprint('oauth',
 @BP.route('/register', methods=['POST'])
 def oauth_register():
     client = oauth_service.register(
-        client_id=request.form['client_id'],
-        client_secret=request.form.get('client_secret'),
-        client_name=request.form['client_name'],
-        redirect_uris=request.form['redirect_uris'],
-        scopes=request.form['scopes'],
+        client_name=request.json.get('client_name'),
+        redirect_uris=request.json.get('redirect_uris'),
+        scopes=request.json.get('scope', ''),
     )
 
-    return jsonify(client)
+    response = jsonify(client)
+    response.status_code = 201  # created
+
+    return response
 
 
 @BP.route('/errors')
@@ -128,3 +130,10 @@ def cb_oauth_authorize(*args, **kwargs):
                            today=today,
                            expires=expires,
                            abort_uri=abort_uri.url)
+
+@BP.errorhandler(OAuthServiceError)
+def handle_oauth_error(error):
+    response = jsonify(error=error.error, description=error.description)
+    response.status_code = 400
+
+    return response
