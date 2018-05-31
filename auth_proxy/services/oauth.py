@@ -269,12 +269,10 @@ class OAuthService(object):
 
         try:
             access_lifetime = int(access_lifetime)
-            if access_lifetime <= 0:
-                raise ValueError
         except ValueError:
             raise OAuthServiceError(
                 'malformed_lifetime',
-                'Access token lifetime should be a positive integer.'
+                'Access token lifetime should be an integer.'
             )
 
         try:
