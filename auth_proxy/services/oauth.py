@@ -278,7 +278,7 @@ class OAuthService(object):
             )
 
         try:
-            approval_expires = int(approval_expires)
+            approval_expires = datetime.fromtimestamp(int(approval_expires))
         except ValueError:
             raise OAuthServiceError(
                 'malformed_expiration',
@@ -291,7 +291,7 @@ class OAuthService(object):
         token = Token(
             client_id=client_id,
             client=client,
-            approval_expires=datetime.fromtimestamp(approval_expires),
+            approval_expires=approval_expires,
             _scopes=scopes,
             user=creating_user,
             patient_id=patient_id
