@@ -5,10 +5,10 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-body">
-                <p class="text-center lead">Confirm that you, David Jones, want to <em>stop</em> having your medical information shared with the</p>
-                <h1 class="text-center">{{ authorization.client_id }}</h1>
-                <p>When you stop sharing with the <strong>{{ authorization.client_id }}</strong>, no new information from Healthcare Provider will be shared.</p>
-                <p>As you have already shared information outside Healthcare Provider with the <strong>{{ authorization.client_id }}</strong>, any request you wish to make to change or stop how that information is used must be made by you within the <strong>{{ authorization.client_id }}</strong>.</p>
+                <p class="text-center lead">Confirm that you, {{ authorization.user.name }}, want to <em>stop</em> having your medical information shared with:</p>
+                <h1 class="text-center">{{ authorization.client.name }}</h1>
+                <p>When you stop sharing with <strong>{{ authorization.client.name }}</strong>, no new information from Healthcare Provider will be shared.</p>
+                <p>As you have already shared information outside Healthcare Provider with the <strong>{{ authorization.client.name }}</strong>, any request you wish to make to change or stop how that information is used must be made by you within the <strong>{{ authorization.client.name }}</strong>.</p>
             </div>
             <div class="modal-footer">
                 <div class="pull-left">
@@ -44,7 +44,7 @@
             <tbody>
                 {% for authorization in authorizations %}
                 <tr rel="{{ authorization.client_id | e }}">
-                    <td>{{ authorization.client_id }}</td>
+                    <td>{{ authorization.client.name }}</td>
                     <td>
                         <ul>
                             {% for scope in authorization.scopes %}
@@ -52,7 +52,7 @@
                             {% endfor %}
                         </ul>
                     </td>
-                    <td>{{ authorization.expires.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ authorization.approval_expires.strftime('%Y-%m-%d') }}</td>
                     <td>
                         <button type="button" class="btn btn-link" data-toggle="modal" data-target="#confirm-{{ authorization.id }}">Revoke</button>
                         {{ confirm_modal(authorization) }}
