@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+from datetime import datetime
 import time
 
 import arrow
@@ -82,18 +83,27 @@ def debug_create_token(*args, **kwargs):
     return jsonify({'access_token': token.access_token, 'refresh_token': token.refresh_token})
 
 
-@BP.route('/debug/introspect/<token>', methods=['GET'])
-def debug_token_introspection(token, *args, **kwargs):
+@BP.route('/debug/introspect', methods=['GET'])
+def debug_token_introspection(*args, **kwargs):
+
+    token = request.args.get('token')
+    if not token:
+        raise OAuthServiceError('no_token', '"token" is required.')
 
     passed_token = Token.query.filter_by(access_token=token).first()
-
+    is_access_token = True
     if not passed_token:
         passed_token = Token.query.filter_by(refresh_token=token).first()
-
+        is_access_token = False
     if not passed_token:
         raise OAuthServiceError('no_token', 'No matching token found.')
 
-    return jsonify(passed_token.interest)
+    data = passed_token.interest
+
+    expiry = data['access_expires' if is_access_token else 'approval_expires']
+    data['active'] = (datetime.now() <= expiry)
+
+    return jsonify(data)
 
 
 @BP.route('/authorize', methods=['GET', 'POST'])
