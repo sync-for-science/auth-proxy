@@ -27,6 +27,12 @@ BP = Blueprint('oauth',
 
 @BP.route('/register', methods=['POST'])
 def oauth_register():
+    if not request.json:
+        raise OAuthServiceError(
+            'bad_request',
+            'The request requires a JSON payload.'
+        )
+
     client = oauth_service.register(
         client_name=request.json.get('client_name'),
         redirect_uris=request.json.get('redirect_uris'),
