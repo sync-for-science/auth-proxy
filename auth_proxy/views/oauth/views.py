@@ -82,20 +82,13 @@ def debug_create_token(*args, **kwargs):
     return jsonify({'access_token': token.access_token, 'refresh_token': token.refresh_token})
 
 
-@BP.route('/debug/introspect', methods=['GET'])
-def debug_token_introspection(*args, **kwargs):
-    access_token = request.args.get('access_token')
-    refresh_token = request.args.get('refresh_token')
+@BP.route('/debug/introspect/<token>', methods=['GET'])
+def debug_token_introspection(token, *args, **kwargs):
 
-    if access_token:
-        passed_token = Token.query.filter_by(access_token=access_token).first()
-    elif refresh_token:
-        passed_token = Token.query.filter_by(refresh_token=refresh_token).first()
-    else:
-        raise OAuthServiceError(
-            'no_token',
-            'Either "access_token" or "refresh_token" is required.'
-        )
+    passed_token = Token.query.filter_by(access_token=token).first()
+
+    if not passed_token:
+        passed_token = Token.query.filter_by(refresh_token=token).first()
 
     if not passed_token:
         raise OAuthServiceError('no_token', 'No matching token found.')
