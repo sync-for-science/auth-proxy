@@ -65,7 +65,7 @@ class AuthproxyTestCase(unittest.TestCase):
         assert access_token
 
         # Attempt to verify Token
-        token_introspection_response = self.app.get('/oauth/debug/introspect/%s' % access_token)
+        token_introspection_response = self.app.get('/oauth/debug/introspect?token=%s' % access_token)
 
         # Did we receive the same token we sent?
         returned_access_token = json.loads(token_introspection_response.get_data(as_text=True))["access_token"]

@@ -162,6 +162,7 @@ def cb_oauth_authorize(*args, **kwargs):
                            expires=expires,
                            abort_uri=abort_uri.url)
 
+
 @BP.errorhandler(OAuthServiceError)
 def handle_oauth_error(error):
     response = jsonify(error=error.error, description=error.description)
