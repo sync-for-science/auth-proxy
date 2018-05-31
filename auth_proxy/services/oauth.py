@@ -231,7 +231,7 @@ class OAuthService(object):
         if not user:
             raise OAuthServiceError(
                 'no_user',
-                '"user_name" is required.'
+                '"username" is required.'
             )
 
         creating_user = User.query.filter_by(username=user).first()

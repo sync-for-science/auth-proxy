@@ -75,7 +75,7 @@ def debug_create_token(*args, **kwargs):
         access_lifetime=token_json.get('access_lifetime', default_access_lifetime),
         approval_expires=token_json.get('approval_expires', default_approval_expiry),
         scopes=token_json.get('scope'),
-        user=token_json.get('user_name'),
+        user=token_json.get('username'),
         patient_id=token_json.get('patient_id')
     )
 
