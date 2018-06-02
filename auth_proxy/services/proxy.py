@@ -36,8 +36,17 @@ class ProxyService(object):
                 'valueUri': valueUri,
             })
 
+        service = {
+            'coding': [{
+                'system': 'http://hl7.org/fhir/restful-security-service',
+                'code': 'SMART-on-FHIR'
+            }],
+            'text': 'OAuth2 using SMART-on-FHIR profile (see http://docs.smarthealthit.org)'
+        }
+
         security = conformance['rest'][0].get('security', {})
         security['extension'] = [extension]
+        security['service'] = [service]
         conformance['rest'][0]['security'] = security
 
         return conformance
