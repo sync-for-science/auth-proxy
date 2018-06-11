@@ -27,7 +27,7 @@ requests-oauthlib==0.7.0
 six==1.10.0
 SQLAlchemy==1.1.4
 SQLAlchemy-Utils==0.32.11
-uWSGI==2.0.15
+uWSGI==2.0.17
 Werkzeug==0.11.11
 wrapt==1.10.8
 WTForms==2.1
