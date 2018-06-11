@@ -109,8 +109,8 @@ class Token(db.Model):
 
     access_token = Column(String, unique=True)
     refresh_token = Column(String, unique=True)
-    expires = Column(DateTime)
-    approval_expires = Column(DateTime)
+    expires = Column(DateTime)  # access token expiration time
+    approval_expires = Column(DateTime)  # refresh token expiration time
     _scopes = Column('scopes', Text)
     _security_labels = Column('security_labels', Text)
 
@@ -147,12 +147,15 @@ class Token(db.Model):
 
     @property
     def interest(self):
+
         return {
             'token_type': self.token_type,
             'access_token': self.access_token,
             'refresh_token': self.refresh_token,
             'approval_expires': self.approval_expires,
             'security_labels': self.security_labels,
-            'expires': self.expires,
-            'scopes': self.scopes,
+            'access_expires': self.expires,
+            'scope': ' '.join(self.scopes),
+            'client_id': self.client.client_id,
+            'username': self.user.username
         }

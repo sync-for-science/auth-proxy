@@ -1,9 +1,10 @@
 from auth_proxy.application import app, create_app
 from auth_proxy.models.oauth import Client
-from auth_proxy.models.user import User
+from auth_proxy.models.user import Patient, User
 from auth_proxy.extensions import db
 import unittest
 import json
+import time
 
 
 class AuthproxyTestCase(unittest.TestCase):
@@ -13,6 +14,8 @@ class AuthproxyTestCase(unittest.TestCase):
 
     USERNAME = "daniel-adams"
     PASSWORD = "demo-password"
+
+    PATIENT_ID = "smart-1288992"
 
     def setUp(self):
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
@@ -31,6 +34,9 @@ class AuthproxyTestCase(unittest.TestCase):
 
             db.session.add(new_user)
 
+            new_patient = Patient(patient_id=self.PATIENT_ID)
+            new_user.patients.append(new_patient)
+
             db.session.commit()
 
         self.auth_app.testing = True
@@ -39,15 +45,16 @@ class AuthproxyTestCase(unittest.TestCase):
     def test_debug_token(self):
 
         # Create Token
-        expires = 360
+        access_lifetime = 360
+        approval_expires = time.time() + 365*24*60*60
         scopes = "patient/*.read launch/patient offline_access"
-        patient_id = "smart-1288992"
 
         test_token_input = {"client_id": self.CLIENT_ID,
-                            "expires": expires,
-                            "scopes": scopes,
-                            "user": self.USERNAME,
-                            "patient_id": patient_id}
+                            "access_lifetime": access_lifetime,
+                            "approval_expires": approval_expires,
+                            "scope": scopes,
+                            "username": self.USERNAME,
+                            "patient_id": self.PATIENT_ID}
 
         debug_token_return = self.app.post('/oauth/debug/token',
                                            data=json.dumps(test_token_input),
@@ -58,7 +65,7 @@ class AuthproxyTestCase(unittest.TestCase):
         assert access_token
 
         # Attempt to verify Token
-        token_introspection_response = self.app.get('/oauth/debug/introspect?access_token=%s' % access_token)
+        token_introspection_response = self.app.get('/oauth/debug/introspect?token=%s' % access_token)
 
         # Did we receive the same token we sent?
         returned_access_token = json.loads(token_introspection_response.get_data(as_text=True))["access_token"]

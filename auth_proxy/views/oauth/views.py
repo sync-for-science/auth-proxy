@@ -1,6 +1,9 @@
 # pylint: disable=missing-docstring
 """ Views module
 """
+from datetime import datetime
+import time
+
 import arrow
 from flask import (
     Blueprint,
@@ -14,6 +17,7 @@ from furl import furl
 from auth_proxy.extensions import csrf, oauthlib
 from auth_proxy.services import oauth_service
 from auth_proxy.models.oauth import Token
+from auth_proxy.services import OAuthServiceError
 
 
 BP = Blueprint('oauth',
@@ -24,15 +28,22 @@ BP = Blueprint('oauth',
 
 @BP.route('/register', methods=['POST'])
 def oauth_register():
+    if not request.json:
+        raise OAuthServiceError(
+            'bad_request',
+            'The request requires a JSON payload.'
+        )
+
     client = oauth_service.register(
-        client_id=request.form['client_id'],
-        client_secret=request.form.get('client_secret'),
-        client_name=request.form['client_name'],
-        redirect_uris=request.form['redirect_uris'],
-        scopes=request.form['scopes'],
+        client_name=request.json.get('client_name'),
+        redirect_uris=request.json.get('redirect_uris'),
+        scopes=request.json.get('scope', ''),
     )
 
-    return jsonify(client)
+    response = jsonify(client)
+    response.status_code = 201  # created
+
+    return response
 
 
 @BP.route('/errors')
@@ -57,20 +68,42 @@ def debug_create_token(*args, **kwargs):
 
     token_json = request.get_json()
 
-    token = oauth_service.create_debug_token(client_id=token_json["client_id"],
-                                             approval_expires=token_json["expires"],
-                                             scopes=token_json["scopes"],
-                                             user=token_json["user"],
-                                             patient_id=token_json["patient_id"])
+    default_access_lifetime = 60*60  # 1 hour
+    default_approval_expiry = time.time() + 365*24*60*60  # 1 year from now
 
-    return jsonify({"access_token": token.access_token, "refresh_token": token.refresh_token})
+    token = oauth_service.create_debug_token(
+        client_id=token_json.get('client_id'),
+        access_lifetime=token_json.get('access_lifetime', default_access_lifetime),
+        approval_expires=token_json.get('approval_expires', default_approval_expiry),
+        scopes=token_json.get('scope'),
+        user=token_json.get('username'),
+        patient_id=token_json.get('patient_id')
+    )
+
+    return jsonify({'access_token': token.access_token, 'refresh_token': token.refresh_token})
 
 
 @BP.route('/debug/introspect', methods=['GET'])
 def debug_token_introspection(*args, **kwargs):
-    passed_token = Token.query.filter_by(access_token=request.args["access_token"]).first()
 
-    return jsonify(passed_token.interest)
+    token = request.args.get('token')
+    if not token:
+        raise OAuthServiceError('no_token', '"token" is required.')
+
+    passed_token = Token.query.filter_by(access_token=token).first()
+    is_access_token = True
+    if not passed_token:
+        passed_token = Token.query.filter_by(refresh_token=token).first()
+        is_access_token = False
+    if not passed_token:
+        raise OAuthServiceError('no_token', 'No matching token found.')
+
+    data = passed_token.interest
+
+    expiry = data['access_expires' if is_access_token else 'approval_expires']
+    data['active'] = (datetime.now() <= expiry)
+
+    return jsonify(data)
 
 
 @BP.route('/authorize', methods=['GET', 'POST'])
@@ -128,3 +161,11 @@ def cb_oauth_authorize(*args, **kwargs):
                            today=today,
                            expires=expires,
                            abort_uri=abort_uri.url)
+
+
+@BP.errorhandler(OAuthServiceError)
+def handle_oauth_error(error):
+    response = jsonify(error=error.error, description=error.description)
+    response.status_code = 400
+
+    return response
