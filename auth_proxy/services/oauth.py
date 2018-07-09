@@ -210,17 +210,26 @@ class OAuthService(object):
         Parameters:
             token : dict
             request : oauthlib.Request
+
+        Retrieve all unexpired tokens, and update the one with the latest
+        approval expiration time; delete the remainder. See
+        https://github.com/sync-for-science/auth-proxy/issues/45 for details.
         """
         assert request.user is not None
 
         today = arrow.now().datetime
-        old = self.db.session.query(Token).\
+
+        old_tokens = self.db.session.query(Token).\
             filter_by(client_id=request.client.client_id).\
             filter(Token.approval_expires >= today).\
-            one()
-        new = old.refresh(**token)
+            order_by(Token.approval_expires)
 
-        self.db.session.delete(old)
+        # use the token with latest approval expires date
+        new = old_tokens[-1].refresh(**token)
+
+        for old in old_tokens:
+            self.db.session.delete(old)
+
         self.db.session.add(new)
         self.db.session.commit()
 
