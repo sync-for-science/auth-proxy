@@ -140,6 +140,7 @@ class OAuthService(object):
         """
         old = self.db.session.query(Token).\
             filter_by(client_id=client_id).\
+            filter_by(patient_id=patient_id).\
             all()
         for token in old:
             self.db.session.delete(token)
@@ -222,6 +223,7 @@ class OAuthService(object):
         old_tokens = self.db.session.query(Token).\
             filter_by(client_id=request.client.client_id).\
             filter(Token.approval_expires >= today).\
+            filter_by(patient_id=token['patient']).\
             order_by(Token.approval_expires)
 
         # use the token with latest approval expires date
