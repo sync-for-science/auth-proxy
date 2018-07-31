@@ -36,6 +36,9 @@
             <thead>
                 <tr>
                     <th>App</th>
+                    {% if not current_user.default_patient_id %}
+                    <th>Patient</th>
+                    {% endif %}
                     <th>What's shared</th>
                     <th>Expires</th>
                     <th>Revoke access?</th>
@@ -45,6 +48,9 @@
                 {% for authorization in authorizations %}
                 <tr rel="{{ authorization.client_id | e }}">
                     <td>{{ authorization.client.name }}</td>
+                    {% if not current_user.default_patient_id %}
+                    <td>{{ authorization.patient.name }}</td>
+                    {% endif %}
                     <td>
                         <ul>
                             {% for scope in authorization.scopes %}
