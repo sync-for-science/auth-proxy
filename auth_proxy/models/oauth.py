@@ -115,7 +115,9 @@ class Token(db.Model):
     _security_labels = Column('security_labels', Text)
 
     # FHIR Patient id
-    patient_id = Column(String)
+    patient_id = Column(String, ForeignKey('patient.patient_id'),
+                        nullable=False)
+    patient = orm.relationship('Patient')
 
     def refresh(self, access_token, refresh_token, expires_in, token_type, scope, **kwargs):
         expires = datetime.utcnow() + timedelta(seconds=expires_in)
