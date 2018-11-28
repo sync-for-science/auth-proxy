@@ -39,6 +39,7 @@ def create_app():
     extensions.csrf.init_app(app)
     extensions.login_manager.init_app(app)
     extensions.oauthlib.init_app(app)
+    extensions.cors.init_app(app)
 
     assert filters
 
